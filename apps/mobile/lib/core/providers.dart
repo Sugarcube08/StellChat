@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'crypto/identity_service.dart';
 import 'network/relay_manager.dart';
 import 'network/websocket_service.dart';
 import 'notification_service.dart';
@@ -17,7 +16,8 @@ import '../features/chat/conversation_service.dart';
 import '../features/media/media_service.dart';
 import '../features/media/media_manager.dart';
 import '../features/media/share_service.dart';
-import 'backup/backup_service.dart';
+import 'package:flutter/foundation.dart';
+import 'stellar/stellar_wallet_service.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -32,9 +32,24 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   );
 });
 
-final identityServiceProvider = Provider<IdentityService>((ref) {
-  final sodium = ref.watch(sodiumProvider);
-  return IdentityService(sodium, ref.watch(secureStorageProvider));
+class IdentityServiceWrapper {
+  final SodiumSumo sodium;
+  final dynamic walletIdentity;
+  final String address;
+  
+  IdentityServiceWrapper(this.sodium, this.walletIdentity, this.address);
+  
+  dynamic get currentIdentity => walletIdentity;
+  bool get hasIdentity => walletIdentity != null;
+  
+  String derivePublicId(Uint8List ed25519PubKey) {
+    return address;
+  }
+}
+
+final identityServiceProvider = Provider<dynamic>((ref) {
+  final wallet = ref.watch(stellarWalletServiceProvider);
+  return IdentityServiceWrapper(wallet.sodium, wallet.walletIdentity, wallet.address);
 });
 
 final dmServiceProvider = Provider<DMService>((ref) {
@@ -90,15 +105,6 @@ final shareServiceProvider = Provider<ShareService>((ref) {
   );
 });
 
-final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(
-    ref.watch(sodiumProvider),
-    ref.watch(identityServiceProvider),
-    ref.watch(contactServiceProvider),
-    ref.watch(relayManagerProvider),
-  );
-});
-
 // Alias for V1 backward compatibility
 final cryptoServiceProvider = identityServiceProvider;
 
@@ -146,4 +152,21 @@ final messageBoxListenableProvider = Provider<void>((ref) {
   void listener() => ref.invalidateSelf();
   box.listenable().addListener(listener);
   ref.onDispose(() => box.listenable().removeListener(listener));
+});
+
+final stellarWalletServiceProvider = ChangeNotifierProvider<StellarWalletService>((ref) {
+  final isAndroid = defaultTargetPlatform == TargetPlatform.android && !kIsWeb;
+  final host = isAndroid ? "10.0.2.2" : "localhost";
+  
+  final service = StellarWalletService(
+    horizonUrl: "http://$host:8000",
+    friendbotUrl: "http://$host:8000/friendbot",
+    sodium: ref.watch(sodiumProvider),
+    storage: ref.watch(secureStorageProvider),
+  );
+  
+  // Restore previous session automatically
+  service.tryRestoreSession();
+  
+  return service;
 });
