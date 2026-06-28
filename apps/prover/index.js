@@ -1,5 +1,6 @@
 const express = require("express");
 const snarkjs = require("snarkjs");
+const circomlibjs = require("circomlibjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -11,6 +12,21 @@ const PORT = process.env.PORT || 5001;
 // Path to compiled circuit WASM and zkey proving key
 const WASM_PATH = process.env.WASM_PATH || path.join(__dirname, "../../zk/build/payment_hasher_js/payment_hasher.wasm");
 const ZKEY_PATH = process.env.ZKEY_PATH || path.join(__dirname, "../../zk/build/payment_hasher_final.zkey");
+
+let poseidon;
+async function getPoseidon() {
+  if (!poseidon) {
+    poseidon = await circomlibjs.buildPoseidon();
+  }
+  return poseidon;
+}
+
+// Pre-initialize Poseidon
+getPoseidon().then(() => {
+  console.log("[Prover] Poseidon hash function initialized");
+}).catch(err => {
+  console.error("[Prover] Failed to initialize Poseidon:", err);
+});
 
 app.get("/health", (req, res) => {
   const hasWasm = fs.existsSync(WASM_PATH);
@@ -31,11 +47,10 @@ app.post("/prove", async (req, res) => {
     sender_private_key,
     recipient_stellar_addr_hash,
     amount,
-    blinding_factor,
-    payment_hash_commitment
+    blinding_factor
   } = req.body;
 
-  if (!sender_private_key || !recipient_stellar_addr_hash || !amount || !blinding_factor || !payment_hash_commitment) {
+  if (!sender_private_key || !recipient_stellar_addr_hash || !amount || !blinding_factor) {
     return res.status(400).json({ error: "Missing required circuit inputs" });
   }
 
@@ -49,12 +64,24 @@ app.post("/prove", async (req, res) => {
   }
 
   try {
+    const p = await getPoseidon();
+    
+    // Hash elements must be bounded within BN128 scalar field
+    const pHash = p([
+      BigInt(sender_private_key),
+      BigInt(recipient_stellar_addr_hash),
+      BigInt(amount),
+      BigInt(blinding_factor)
+    ]);
+    const computedCommitment = p.F.toString(pHash);
+    console.log("[Prover] Calculated Poseidon commitment:", computedCommitment);
+
     const inputs = {
       sender_private_key: String(sender_private_key),
       recipient_stellar_addr_hash: String(recipient_stellar_addr_hash),
       amount: String(amount),
       blinding_factor: String(blinding_factor),
-      payment_hash_commitment: String(payment_hash_commitment)
+      payment_hash_commitment: computedCommitment
     };
 
     console.log("[Prover] Executing SnarkJS Plonk prove...");

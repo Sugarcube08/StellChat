@@ -17,7 +17,7 @@ chmod +x ./scripts/setup_zk.sh
 # 2. Compile contract (Cargo is already built, but verify target exists)
 echo "--> Compiling Soroban Smart Contract..."
 cd contracts/stellar
-cargo build --target wasm32-unknown-unknown --release
+cargo build --target wasm32v1-none --release
 cd "$REPO_DIR"
 
 # 3. Boot docker compose stack
@@ -36,21 +36,31 @@ until curl -s http://localhost:8000/ > /dev/null; do
 done
 echo "Stellar Horizon is online!"
 
+echo "--> Waiting for MinIO object storage..."
+until curl -s http://localhost:9000/minio/health/live > /dev/null; do
+  sleep 1
+done
+echo "MinIO object storage is online!"
+
 # 5. Deploy contract to standalone network
 echo "--> Deploying Soroban smart contract..."
-# Setup admin account inside container
-docker exec stellchat-stellar-local stellar keys generate --global admin --network standalone || true
-ADMIN_ADDR=$(docker exec stellchat-stellar-local stellar keys address admin)
+STELLAR_CLI="/home/sugarcube/.local/bin/stellar"
+
+# Add standalone network configuration to host CLI if not exists
+$STELLAR_CLI network add standalone \
+  --rpc-url "http://localhost:8000/soroban/rpc" \
+  --network-passphrase "Standalone Network ; February 2017" || true
+
+# Setup admin account
+$STELLAR_CLI keys generate admin --network standalone || true
+ADMIN_ADDR=$($STELLAR_CLI keys address admin)
 
 echo "Funding local administrator address ($ADMIN_ADDR)..."
-docker exec stellchat-stellar-local curl -s "http://localhost:8000/friendbot?addr=$ADMIN_ADDR" > /dev/null
+curl -s "http://localhost:8000/friendbot?addr=$ADMIN_ADDR" > /dev/null
 
-# Copy compiled WASM into container
-docker cp contracts/stellar/target/wasm32-unknown-unknown/release/stellchat_payment_verifier.wasm stellchat-stellar-local:/tmp/contract.wasm
-
-# Deploy
-CONTRACT_ID=$(docker exec stellchat-stellar-local stellar contract deploy \
-  --wasm /tmp/contract.wasm \
+# Deploy contract directly from the host
+CONTRACT_ID=$($STELLAR_CLI contract deploy \
+  --wasm contracts/stellar/target/wasm32v1-none/release/stellchat_payment_verifier.wasm \
   --source admin \
   --network standalone)
 
@@ -62,7 +72,7 @@ echo "$CONTRACT_ID" > apps/backend/src/payment/contract_id.txt
 
 # 6. Initialize contract
 echo "--> Initializing smart contract on-chain..."
-docker exec stellchat-stellar-local stellar contract invoke \
+$STELLAR_CLI contract invoke \
   --id "$CONTRACT_ID" \
   --source admin \
   --network standalone \

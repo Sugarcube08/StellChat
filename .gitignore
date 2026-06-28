@@ -69,3 +69,4 @@ appimagetool*
 .antigravitycli
 target/
 test_snapshots/
+node_modules/
