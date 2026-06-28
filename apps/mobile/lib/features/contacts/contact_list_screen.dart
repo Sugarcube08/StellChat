@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/providers.dart';
 import '../contacts/contact.dart';
-import '../settings/identity_actions.dart';
 import 'contact_actions.dart';
 import 'my_passport_screen.dart';
 import 'contact_detail_screen.dart';
@@ -22,7 +22,7 @@ class ContactListScreen extends ConsumerStatefulWidget {
 }
 
 class _ContactListScreenState extends ConsumerState<ContactListScreen>
-    with ContactActions, IdentityActions {
+    with ContactActions {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -33,7 +33,7 @@ class _ContactListScreenState extends ConsumerState<ContactListScreen>
           valueListenable: Hive.box<Contact>('contacts').listenable(),
           builder: (context, _, _) {
             final contacts = ref.watch(contactServiceProvider).getAllContacts();
-            final identity = ref.watch(identityServiceProvider).currentIdentity;
+            final wallet = ref.watch(stellarWalletServiceProvider);
 
             return Scaffold(
               backgroundColor: colors.primaryBackground,
@@ -56,10 +56,10 @@ class _ContactListScreenState extends ConsumerState<ContactListScreen>
                             ),
                           ),
                         ),
-                        if (identity != null)
+                        if (wallet.isConnected)
                           SliverToBoxAdapter(
                             child: MyPassportCard(
-                              identity: identity,
+                              walletAddress: wallet.address,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -96,7 +96,7 @@ class _ContactListScreenState extends ConsumerState<ContactListScreen>
                                   context,
                                   icon: Icons.share_outlined,
                                   label: 'SHARE',
-                                  onTap: () => shareIdentity(ref),
+                                  onTap: () => Share.share(wallet.address),
                                 ),
                               ],
                             ),

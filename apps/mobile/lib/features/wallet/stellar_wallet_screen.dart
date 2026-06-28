@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers.dart';
 import '../../design_system/colors.dart';
 import '../../design_system/typography.dart';
 import '../../design_system/spacing.dart';
@@ -14,61 +15,38 @@ class StellarWalletScreen extends ConsumerStatefulWidget {
 }
 
 class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
-  bool _isConnected = false;
-  String _walletAddress = "GD7O...K3PL";
-  double _xlmBalance = 245.50;
-  double _usdcBalance = 80.00;
-  bool _isConnecting = false;
 
-  final List<Map<String, dynamic>> _mockTransactions = [
-    {
-      "type": "Sent",
-      "amount": "15.00 USDC",
-      "recipient": "Alice (A3K...)",
-      "txHash": "8cf5be...1c2a",
-      "status": "ZK Verified",
-      "time": "10 mins ago"
-    },
-    {
-      "type": "Received",
-      "amount": "50.00 XLM",
-      "recipient": "Bob (B9W...)",
-      "txHash": "a1f9d2...7b3e",
-      "status": "ZK Verified",
-      "time": "2 hours ago"
-    },
-    {
-      "type": "Sent",
-      "amount": "100.00 XLM",
-      "recipient": "Merchant (M1X...)",
-      "txHash": "7e3b9f...2d8c",
-      "status": "ZK Verified",
-      "time": "Yesterday"
-    }
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final wallet = ref.read(stellarWalletServiceProvider);
+      if (wallet.isConnected) {
+        wallet.fetchBalances();
+        wallet.fetchTransactions();
+      }
+    });
+  }
 
   void _toggleWalletConnection() async {
-    if (_isConnected) {
-      setState(() {
-        _isConnected = false;
-        _xlmBalance = 0.0;
-        _usdcBalance = 0.0;
-      });
+    final wallet = ref.read(stellarWalletServiceProvider);
+    if (wallet.isConnected) {
+      wallet.disconnect();
     } else {
-      setState(() => _isConnecting = true);
-      await Future.delayed(const Duration(seconds: 1)); // Simulate ledger fetch
-      setState(() {
-        _isConnected = true;
-        _isConnecting = false;
-        _walletAddress = "GD7OQ4KRLDWR3B5MX43NBLF2J7J37A2C7L6E2QPL47G53WJ735STELL";
-        _xlmBalance = 245.50;
-        _usdcBalance = 80.00;
-      });
+      try {
+        await wallet.connectWallet();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to connect wallet: $e')),
+          );
+        }
+      }
     }
   }
 
-  void _copyAddress() {
-    Clipboard.setData(ClipboardData(text: _walletAddress));
+  void _copyAddress(String address) {
+    Clipboard.setData(ClipboardData(text: address));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Address copied to clipboard'), duration: Duration(seconds: 1)),
     );
@@ -77,6 +55,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final wallet = ref.watch(stellarWalletServiceProvider);
 
     return Scaffold(
       backgroundColor: colors.primaryBackground,
@@ -115,7 +94,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.l),
-                        child: _buildWalletBalanceCard(context, colors),
+                        child: _buildWalletBalanceCard(context, wallet, colors),
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -131,7 +110,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                         ),
                       ),
                     ),
-                    _buildTransactionsList(colors),
+                    _buildTransactionsList(wallet, colors),
                   ],
                 ),
               ),
@@ -142,7 +121,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
     );
   }
 
-  Widget _buildWalletBalanceCard(BuildContext context, dynamic colors) {
+  Widget _buildWalletBalanceCard(BuildContext context, dynamic wallet, dynamic colors) {
     return GhostSurface(
       type: GhostSurfaceType.secondary,
       padding: const EdgeInsets.all(AppSpacing.l),
@@ -165,7 +144,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                   ),
                   const SizedBox(width: AppSpacing.s),
                   Text(
-                    _isConnected ? 'STELLAR ACCOUNT' : 'STELLAR DISCONNECTED',
+                    wallet.isConnected ? 'STELLAR ACCOUNT' : 'STELLAR DISCONNECTED',
                     style: AppTypography.caption(context).copyWith(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
@@ -173,27 +152,27 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                   ),
                 ],
               ),
-              _isConnecting
+              wallet.isLoading
                   ? const SizedBox(
                       width: 16,
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white24),
                     )
                   : GhostButton(
-                      label: _isConnected ? 'DISCONNECT' : 'CONNECT WALLET',
+                      label: wallet.isConnected ? 'DISCONNECT' : 'CONNECT WALLET',
                       onPressed: _toggleWalletConnection,
                     ),
             ],
           ),
-          if (_isConnected) ...[
+          if (wallet.isConnected) ...[
             const SizedBox(height: AppSpacing.l),
             GestureDetector(
-              onTap: _copyAddress,
+              onTap: () => _copyAddress(wallet.address),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      _walletAddress,
+                      wallet.address,
                       style: const TextStyle(
                         fontFamily: 'monospace',
                         fontSize: 10,
@@ -217,7 +196,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                       Text('BALANCE (XLM)', style: AppTypography.caption(context).copyWith(color: colors.secondaryText.withAlpha(100))),
                       const SizedBox(height: 4),
                       Text(
-                        '${_xlmBalance.toStringAsFixed(2)} XLM',
+                        '${wallet.xlmBalance.toStringAsFixed(2)} XLM',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1),
                       ),
                     ],
@@ -230,7 +209,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                       Text('BALANCE (USDC)', style: AppTypography.caption(context).copyWith(color: colors.secondaryText.withAlpha(100))),
                       const SizedBox(height: 4),
                       Text(
-                        '\$${_usdcBalance.toStringAsFixed(2)}',
+                        '\$${wallet.usdcBalance.toStringAsFixed(2)}',
                         style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1),
                       ),
                     ],
@@ -253,8 +232,8 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
     );
   }
 
-  Widget _buildTransactionsList(dynamic colors) {
-    if (!_isConnected) {
+  Widget _buildTransactionsList(dynamic wallet, dynamic colors) {
+    if (!wallet.isConnected) {
       return SliverToBoxAdapter(
         child: Center(
           child: Padding(
@@ -268,10 +247,25 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
       );
     }
 
+    final txs = wallet.transactions;
+    if (txs.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48.0),
+            child: Text(
+              'No recent transactions found on the ledger.',
+              style: TextStyle(color: colors.textMuted.withAlpha(100), fontSize: 12),
+            ),
+          ),
+        ),
+      );
+    }
+
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          final tx = _mockTransactions[index];
+          final tx = txs[index];
           final isSent = tx['type'] == 'Sent';
           return GhostCard(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: 4),
@@ -330,7 +324,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
             ),
           );
         },
-        childCount: _mockTransactions.length,
+        childCount: txs.length,
       ),
     );
   }
@@ -367,9 +361,11 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // Open mock Stellar Explorer link
+              // Open local quickstart Horizon transaction details
+              final url = "${ref.read(stellarWalletServiceProvider).horizonUrl}/transactions/${tx['txHash']}";
+              Clipboard.setData(ClipboardData(text: url));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Opening Stellar Explorer (Testnet)...')),
+                SnackBar(content: Text('Explorer URL copied: $url')),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: colors.ghostAccent, foregroundColor: Colors.black),

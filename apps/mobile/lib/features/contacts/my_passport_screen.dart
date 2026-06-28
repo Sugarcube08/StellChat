@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'dart:io';
-import 'dart:ui' as ui;
-import 'package:path_provider/path_provider.dart';
-import 'package:gal/gal.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/providers.dart';
-import '../../core/crypto/identity_service.dart';
-import '../settings/identity_actions.dart';
 import '../../design_system/colors.dart';
 import '../../design_system/typography.dart';
 import '../../design_system/spacing.dart';
@@ -21,248 +15,163 @@ class MyPassportScreen extends ConsumerStatefulWidget {
   ConsumerState<MyPassportScreen> createState() => _MyPassportScreenState();
 }
 
-class _MyPassportScreenState extends ConsumerState<MyPassportScreen> with IdentityActions {
-  final GlobalKey _qrKey = GlobalKey();
-
-  Future<void> _saveQRToGallery(String publicId) async {
-    try {
-      final boundary = _qrKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return;
-
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) return;
-
-      final bytes = byteData.buffer.asUint8List();
-      
-      if (Platform.isLinux) {
-        final home = Platform.environment['HOME'];
-        final downloadsDir = Directory('$home/Downloads/StellChat');
-        if (!await downloadsDir.exists()) {
-          await downloadsDir.create(recursive: true);
-        }
-        final file = File('${downloadsDir.path}/ghost_identity_${publicId.substring(0, 8)}.png');
-        await file.writeAsBytes(bytes);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Identity saved to: ${file.path}')));
-        }
-      } else {
-        final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/ghost_identity_${publicId.substring(0, 8)}.png');
-        await file.writeAsBytes(bytes);
-
-        await Gal.putImage(file.path);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Identity QR saved to gallery!')));
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save QR: $e')));
-      }
-    }
-  }
-
+class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
   @override
   Widget build(BuildContext context) {
-    final idService = ref.watch(identityServiceProvider);
-    final identity = idService.currentIdentity;
+    final wallet = ref.watch(stellarWalletServiceProvider);
     final colors = AppColors.of(context);
-
-    if (identity == null) {
-      return Scaffold(
-        backgroundColor: colors.primaryBackground,
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
 
     return Scaffold(
       backgroundColor: colors.primaryBackground,
       appBar: AppBar(
-        title: const Text('DIGITAL PASSPORT'),
+        title: const Text('STELLAR WALLET PROFILE'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double maxWidth = constraints.maxWidth > 500 ? 500 : constraints.maxWidth;
-          final bool isNarrow = constraints.maxWidth < 360;
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              children: [
+                // QR Card
+                GhostSurface(
+                  type: GhostSurfaceType.elevated,
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  borderRadius: BorderRadius.circular(32),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.m),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: QrImageView(
+                          data: wallet.address,
+                          version: QrVersions.auto,
+                          size: 180,
+                          gapless: false,
+                          eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+                          dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          wallet.address,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.section(context).copyWith(
+                            fontFamily: 'monospace',
+                            letterSpacing: 0.5,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s),
+                      Text(
+                        'STELLCHAT WALLET ADDRESS',
+                        style: AppTypography.caption(context).copyWith(
+                          color: colors.ghostAccent,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
 
-          return SingleChildScrollView(
-            child: Center(
-              child: Container(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-                child: Column(
+                // Balances Section
+                GhostSurface(
+                  type: GhostSurfaceType.secondary,
+                  padding: const EdgeInsets.all(AppSpacing.l),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'BALANCES',
+                        style: AppTypography.caption(context).copyWith(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('XLM (Stellar Native)', style: TextStyle(fontWeight: FontWeight.w500)),
+                          Text(
+                            '${wallet.xlmBalance.toStringAsFixed(4)} XLM',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('USDC (Stablecoin)', style: TextStyle(fontWeight: FontWeight.w500)),
+                          Text(
+                            '${wallet.usdcBalance.toStringAsFixed(2)} USDC',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Actions
+                Row(
                   children: [
-                    const SizedBox(height: AppSpacing.l),
-                    FutureBuilder<IdentityPackage>(
-                      future: idService.createPackage([]),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) {
-                          return const CircularProgressIndicator();
-                        }
-                        final pkgString = snapshot.data!.toEncodedString();
-                        return Column(
-                          children: [
-                            RepaintBoundary(
-                              key: _qrKey,
-                              child: GhostSurface(
-                                type: GhostSurfaceType.elevated,
-                                padding: const EdgeInsets.all(AppSpacing.xl),
-                                borderRadius: BorderRadius.circular(32),
-                                child: Column(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(AppSpacing.m),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: QrImageView(
-                                        data: pkgString,
-                                        version: QrVersions.auto,
-                                        size: isNarrow ? 160 : 200,
-                                        gapless: false,
-                                        eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
-                                        dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.xl),
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        identity.publicId,
-                                        textAlign: TextAlign.center,
-                                        style: AppTypography.section(context).copyWith(
-                                          fontFamily: 'monospace',
-                                          letterSpacing: 1,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpacing.s),
-                                    Text(
-                                      'STELLCHAT ID',
-                                      style: AppTypography.caption(context).copyWith(
-                                        color: colors.ghostAccent,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 2,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xl),
-                            _buildInfoSection(
-                              context,
-                              'SAFETY FINGERPRINT',
-                              identity.fingerprint,
-                              isMonospace: true,
-                            ),
-                            const SizedBox(height: AppSpacing.l),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: AppSpacing.l),
-                              child: Text(
-                                'Scan this passport to establish a secure, end-to-end encrypted channel. Your identity is local and sovereign.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 13, color: colors.textMuted, height: 1.5),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.l),
-                            // Responsive Button Row/Column
-                            if (constraints.maxWidth > 380)
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: GhostButton(
-                                      label: 'DOWNLOAD',
-                                      icon: Icons.download,
-                                      type: GhostButtonType.secondary,
-                                      onPressed: () => _saveQRToGallery(identity.publicId),
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.m),
-                                  Expanded(
-                                    child: GhostButton(
-                                      label: 'SHARE LINK',
-                                      icon: Icons.share,
-                                      type: GhostButtonType.primary,
-                                      onPressed: () => shareIdentity(ref),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              Column(
-                                children: [
-                                  GhostButton(
-                                    label: 'DOWNLOAD',
-                                    icon: Icons.download,
-                                    type: GhostButtonType.secondary,
-                                    width: double.infinity,
-                                    onPressed: () => _saveQRToGallery(identity.publicId),
-                                  ),
-                                  const SizedBox(height: AppSpacing.m),
-                                  GhostButton(
-                                    label: 'SHARE LINK',
-                                    icon: Icons.share,
-                                    type: GhostButtonType.primary,
-                                    width: double.infinity,
-                                    onPressed: () => shareIdentity(ref),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        );
-                      },
+                    Expanded(
+                      child: GhostButton(
+                        label: 'COPY ADDRESS',
+                        icon: Icons.copy,
+                        type: GhostButtonType.secondary,
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: wallet.address));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Address copied to clipboard!')),
+                          );
+                        },
+                      ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(width: AppSpacing.m),
+                    Expanded(
+                      child: GhostButton(
+                        label: 'REFRESH',
+                        icon: Icons.refresh,
+                        type: GhostButtonType.primary,
+                        onPressed: () async {
+                          await wallet.fetchBalances();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Balances updated.')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ],
                 ),
-              ),
+                const SizedBox(height: AppSpacing.l),
+                Text(
+                  'Share this QR code with others to receive private Stellar payments directly inside StellChat.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: colors.textMuted, height: 1.5),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
-    );
-  }
-
-  Widget _buildInfoSection(BuildContext context, String label, String value, {bool isMonospace = false}) {
-    final colors = AppColors.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            label,
-            style: AppTypography.caption(context).copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-              color: colors.secondaryText.withAlpha(100),
-            ),
-          ),
-        ),
-        GhostSurface(
-          type: GhostSurfaceType.secondary,
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.m),
-          child: Text(
-            value,
-            style: AppTypography.body(context).copyWith(
-              fontFamily: isMonospace ? 'monospace' : null,
-              fontWeight: isMonospace ? FontWeight.bold : null,
-              fontSize: isMonospace ? 12 : null,
-              color: colors.primaryText.withAlpha(200),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
     );
   }
 }

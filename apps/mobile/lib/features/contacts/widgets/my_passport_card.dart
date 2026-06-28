@@ -4,15 +4,14 @@ import '../../../design_system/components/components.dart';
 import '../../../design_system/typography.dart';
 import '../../../design_system/spacing.dart';
 import '../../../design_system/colors.dart';
-import '../../../core/crypto/identity_service.dart';
 
 class MyPassportCard extends StatelessWidget {
-  final Identity identity;
+  final String walletAddress;
   final VoidCallback onTap;
 
   const MyPassportCard({
     super.key,
-    required this.identity,
+    required this.walletAddress,
     required this.onTap,
   });
 
@@ -41,7 +40,7 @@ class MyPassportCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: QrImageView(
-                  data: identity.publicId,
+                  data: walletAddress,
                   version: QrVersions.auto,
                   size: 80.0,
                   gapless: false,
@@ -53,7 +52,7 @@ class MyPassportCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'MY PASSPORT',
+                      'STELLAR WALLET PROFILE',
                       style: AppTypography.caption(context).copyWith(
                         fontWeight: FontWeight.w900,
                         color: colors.ghostAccent,
@@ -62,7 +61,7 @@ class MyPassportCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      identity.publicId,
+                      walletAddress,
                       style: AppTypography.section(context).copyWith(
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
@@ -73,7 +72,7 @@ class MyPassportCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Tap to manage your identity',
+                      'Tap to show QR code',
                       style: AppTypography.caption(context).copyWith(
                         color: colors.secondaryText.withAlpha(100),
                       ),
