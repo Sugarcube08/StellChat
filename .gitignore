@@ -1,0 +1,69 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+
+# Generated
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Hive
+*.hive
+*.lock
+
+# Android
+**/android/.gradle/
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/App.framework
+
+# IDE
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Temporary
+tmp/
+temp/
+temp_*/
+*.tmp
+temp_sodium/
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+
+# Identity Backups
+*.stellchatid
+
+# Local Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# Test Outputs
+coverage/
+
+dist/
+appimagetool
+appimagetool*
+.antigravitycli

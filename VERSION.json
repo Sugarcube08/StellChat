@@ -1,0 +1,5 @@
+{
+  "version": "2.2.2",
+  "release_url": "https://github.com/Sugarcube08/StellChat/releases",
+  "changelog": "StellChat V2.2.2: Robust identity package & invite link parsing, and fixed manual contact addition dialog exit flow."
+}

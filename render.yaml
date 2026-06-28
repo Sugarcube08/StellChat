@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: stellchat-backend
+    env: docker
+    dockerContext: .
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: stellchat-redis
+          property: connectionString
+
+  - type: redis
+    name: stellchat-redis
+    plan: free
+    ipAllowList: [] # Only allow internal connections

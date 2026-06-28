@@ -1,0 +1,38 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+dist/
+# Generated
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Hive
+*.hive
+*.lock
+
+# Temporary
+tmp/
+temp/
+temp_*/
+*.tmp
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.jks
+
+# Identity Backups
+*.stellchatid
+
+# Local Databases
+*.db
+*.sqlite
+*.sqlite3
