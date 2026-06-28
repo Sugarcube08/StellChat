@@ -22,21 +22,21 @@ class ConversationListItem extends StatelessWidget {
     final colors = AppColors.of(context);
     final hasUnread = conversation.unreadCount > 0;
     
-    return GhostCard(
+    return StellCard(
       onTap: onTap,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.l,
         vertical: AppSpacing.xs,
       ),
       padding: const EdgeInsets.all(AppSpacing.m),
-      type: hasUnread ? GhostSurfaceType.elevated : GhostSurfaceType.secondary,
+      type: hasUnread ? StellSurfaceType.elevated : StellSurfaceType.secondary,
       child: Row(
         children: [
-          GhostAvatar(
+          StellAvatar(
             alias: conversation.alias,
             size: 52,
             backgroundColor: hasUnread 
-                ? colors.ghostAccent.withAlpha(30) 
+                ? colors.stellAccent.withAlpha(30) 
                 : colors.elevatedSurface,
           ),
           const SizedBox(width: AppSpacing.m),
@@ -61,7 +61,7 @@ class ConversationListItem extends StatelessWidget {
                       Text(
                         DateFormat.Hm().format(conversation.lastMessage!.timestamp),
                         style: AppTypography.caption(context).copyWith(
-                          color: hasUnread ? colors.ghostAccent : colors.secondaryText.withAlpha(100),
+                          color: hasUnread ? colors.stellAccent : colors.secondaryText.withAlpha(100),
                           fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w400,
                         ),
                       ),
@@ -75,9 +75,9 @@ class ConversationListItem extends StatelessWidget {
                     ),
                     if (hasUnread) ...[
                       const SizedBox(width: AppSpacing.s),
-                      GhostBadge(
+                      StellBadge(
                         label: conversation.unreadCount > 9 ? '9+' : conversation.unreadCount.toString(),
-                        color: colors.ghostAccent,
+                        color: colors.stellAccent,
                         textColor: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ],

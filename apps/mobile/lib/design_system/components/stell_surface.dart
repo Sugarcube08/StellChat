@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import '../colors.dart';
 import '../spacing.dart';
 
-enum GhostSurfaceType {
+enum StellSurfaceType {
   primary,
   secondary,
   elevated,
 }
 
-class GhostSurface extends StatelessWidget {
+class StellSurface extends StatelessWidget {
   final Widget child;
-  final GhostSurfaceType type;
+  final StellSurfaceType type;
   final double? width;
   final double? height;
   final EdgeInsetsGeometry? padding;
@@ -19,10 +19,10 @@ class GhostSurface extends StatelessWidget {
   final Border? border;
   final List<BoxShadow>? boxShadow;
 
-  const GhostSurface({
+  const StellSurface({
     super.key,
     required this.child,
-    this.type = GhostSurfaceType.primary,
+    this.type = StellSurfaceType.primary,
     this.width,
     this.height,
     this.padding,
@@ -38,13 +38,13 @@ class GhostSurface extends StatelessWidget {
     
     Color backgroundColor;
     switch (type) {
-      case GhostSurfaceType.primary:
+      case StellSurfaceType.primary:
         backgroundColor = colors.primaryBackground;
         break;
-      case GhostSurfaceType.secondary:
+      case StellSurfaceType.secondary:
         backgroundColor = colors.secondaryBackground;
         break;
-      case GhostSurfaceType.elevated:
+      case StellSurfaceType.elevated:
         backgroundColor = colors.elevatedSurface;
         break;
     }

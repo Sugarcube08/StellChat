@@ -204,7 +204,7 @@ class _VoiceMessageBubbleState extends ConsumerState<VoiceMessageBubble> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: widget.isMe ? colors.primaryText.withAlpha(20) : colors.ghostAccent.withAlpha(30),
+                color: widget.isMe ? colors.primaryText.withAlpha(20) : colors.stellAccent.withAlpha(30),
                 shape: BoxShape.circle,
               ),
               child: isProcessing
@@ -214,7 +214,7 @@ class _VoiceMessageBubbleState extends ConsumerState<VoiceMessageBubble> {
                     )
                   : Icon(
                       isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: widget.isMe ? colors.primaryText : colors.ghostAccent,
+                      color: widget.isMe ? colors.primaryText : colors.stellAccent,
                       size: 24,
                     ),
             ),
@@ -230,9 +230,9 @@ class _VoiceMessageBubbleState extends ConsumerState<VoiceMessageBubble> {
                     trackHeight: 2,
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 4),
                     overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                    activeTrackColor: widget.isMe ? colors.primaryText : colors.ghostAccent,
+                    activeTrackColor: widget.isMe ? colors.primaryText : colors.stellAccent,
                     inactiveTrackColor: colors.secondaryText.withAlpha(40),
-                    thumbColor: widget.isMe ? colors.primaryText : colors.ghostAccent,
+                    thumbColor: widget.isMe ? colors.primaryText : colors.stellAccent,
                   ),
                   child: Slider(
                     value: _position.inMilliseconds.toDouble(),

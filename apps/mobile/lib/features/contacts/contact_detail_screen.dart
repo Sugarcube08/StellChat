@@ -36,7 +36,7 @@ class ContactDetailScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              GhostAvatar(alias: contact.alias, size: 80),
+              StellAvatar(alias: contact.alias, size: 80),
               const SizedBox(height: AppSpacing.xl),
               Text(
                 'ALIAS',
@@ -75,24 +75,24 @@ class ContactDetailScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              GhostSurface(
+              StellSurface(
                 padding: const EdgeInsets.all(AppSpacing.m),
-                type: GhostSurfaceType.secondary,
+                type: StellSurfaceType.secondary,
                 child: Text(
                   contact.fingerprint,
                   style: AppTypography.body(context).copyWith(
                     fontFamily: 'monospace',
                     fontSize: 12,
-                    color: colors.ghostAccent,
+                    color: colors.stellAccent,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
                 ),
               ),
               const SizedBox(height: 64),
-              GhostButton(
+              StellButton(
                 label: 'OPEN SECURE CHANNEL',
-                type: GhostButtonType.primary,
+                type: StellButtonType.primary,
                 width: double.infinity,
                 onPressed: () {
                   final conv = Conversation(
@@ -139,7 +139,7 @@ class ContactDetailScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         backgroundColor: colors.secondaryBackground,
         title: const Text('RENAME CONTACT'),
-        content: GhostInput(
+        content: StellInput(
           controller: controller,
           hintText: 'Enter new alias...',
           autofocus: true,

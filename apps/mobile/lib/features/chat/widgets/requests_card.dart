@@ -19,14 +19,14 @@ class RequestsCard extends StatelessWidget {
     final colors = AppColors.of(context);
     final bool isEmpty = count == 0;
     
-    return GhostCard(
+    return StellCard(
       onTap: onTap,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.l,
         vertical: AppSpacing.m,
       ),
       padding: const EdgeInsets.all(AppSpacing.m),
-      type: GhostSurfaceType.elevated,
+      type: StellSurfaceType.elevated,
       borderRadius: BorderRadius.circular(20),
       child: Row(
         children: [
@@ -64,7 +64,7 @@ class RequestsCard extends StatelessWidget {
             ),
           ),
           if (!isEmpty)
-            GhostBadge(
+            StellBadge(
               label: count.toString(),
               color: colors.warning,
               textColor: Theme.of(context).colorScheme.brightness == Brightness.dark ? Colors.black : Colors.white,

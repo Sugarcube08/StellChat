@@ -219,19 +219,19 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
     final bool isDesktop = MediaQuery.of(context).size.width > 600;
     final int requestCount = ref.watch(requestCountProvider);
 
-    final List<GhostNavItem> navItems = [
-      GhostNavItem(
+    final List<StellNavItem> navItems = [
+      StellNavItem(
         outlineIcon: Icons.chat_bubble_outline,
         solidIcon: Icons.chat_bubble,
         label: 'Messages',
         badgeCount: requestCount,
       ),
-      const GhostNavItem(
+      const StellNavItem(
         outlineIcon: Icons.people_outline,
         solidIcon: Icons.people,
         label: 'Contacts',
       ),
-      const GhostNavItem(
+      const StellNavItem(
         outlineIcon: Icons.account_balance_wallet_outlined,
         solidIcon: Icons.account_balance_wallet,
         label: 'Wallet',
@@ -249,7 +249,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         backgroundColor: colors.primaryBackground,
         body: Row(
           children: [
-            GhostNavigationRail(
+            StellNavigationRail(
               items: navItems,
               currentIndex: _currentIndex,
               onTap: (index) => setState(() => _currentIndex = index),
@@ -276,7 +276,7 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         bottom: true,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: GhostNavigationBar(
+          child: StellNavigationBar(
             items: navItems,
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),

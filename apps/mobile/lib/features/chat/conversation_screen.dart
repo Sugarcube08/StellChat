@@ -282,13 +282,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: GhostAvatar(alias: widget.conversation.alias, size: 36),
+                child: StellAvatar(alias: widget.conversation.alias, size: 36),
               ),
             ],
           ),
           floatingActionButton: _showScrollButton
               ? FloatingActionButton.extended(
-                  backgroundColor: colors.ghostAccent,
+                  backgroundColor: colors.stellAccent,
                   label: Text(
                     _newMessagesCount > 0
                         ? '↓ $_newMessagesCount New Messages'
@@ -399,7 +399,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 IconButton(
                   icon: Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: colors.ghostAccent,
+                    color: colors.stellAccent,
                   ),
                   onPressed: () => _showPaymentDialog(context),
                 ),
@@ -411,7 +411,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       maxLines: 5,
                       minLines: 1,
                       style: AppTypography.body(context),
-                      cursorColor: colors.ghostAccent,
+                      cursorColor: colors.stellAccent,
                       decoration: InputDecoration(
                         hintText: isGhost
                             ? 'Ghost Message...'
@@ -449,7 +449,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       );
                     }
                     return IconButton(
-                      icon: Icon(Icons.send_rounded, color: colors.ghostAccent),
+                      icon: Icon(Icons.send_rounded, color: colors.stellAccent),
                       onPressed: _sendMessage,
                     );
                   },
@@ -511,7 +511,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             color: isSelected
                 ? (mode == ConversationMode.ghost
                       ? colors.warning
-                      : colors.ghostAccent)
+                      : colors.stellAccent)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
@@ -604,7 +604,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isMe
-              ? colors.ghostAccent.withAlpha(40)
+              ? colors.stellAccent.withAlpha(40)
               : colors.elevatedSurface,
           borderRadius: BorderRadius.circular(20).copyWith(
             bottomRight: isMe
@@ -718,9 +718,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            GhostButton(
+            StellButton(
               label: 'BLOCK',
-              type: GhostButtonType.danger,
+              type: StellButtonType.danger,
               onPressed: () async {
                 await ref
                     .read(conversationServiceProvider)
@@ -728,9 +728,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 navigator.pop();
               },
             ),
-            GhostButton(
+            StellButton(
               label: 'ACCEPT',
-              type: GhostButtonType.primary,
+              type: StellButtonType.primary,
               onPressed: () async {
                 await ref
                     .read(conversationServiceProvider)
@@ -1240,7 +1240,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colors.ghostAccent,
+                  backgroundColor: colors.stellAccent,
                   foregroundColor: Colors.black,
                 ),
                 child: const Text('SEND PAYMENT REQUEST'),
@@ -1273,7 +1273,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.payment, size: 16, color: colors.ghostAccent),
+              Icon(Icons.payment, size: 16, color: colors.stellAccent),
               const SizedBox(width: 8),
               Text(
                 'STELLAR PAYMENT',
@@ -1281,7 +1281,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1,
                   fontSize: 9,
-                  color: colors.ghostAccent,
+                  color: colors.stellAccent,
                 ),
               ),
             ],
@@ -1391,7 +1391,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     'EXPLORE',
                     style: TextStyle(
                       fontSize: 10,
-                      color: colors.ghostAccent,
+                      color: colors.stellAccent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

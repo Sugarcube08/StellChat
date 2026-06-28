@@ -19,7 +19,7 @@ class ContactListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     
-    return GhostCard(
+    return StellCard(
       onTap: onTap,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.l,
@@ -29,10 +29,10 @@ class ContactListItem extends StatelessWidget {
         horizontal: AppSpacing.m,
         vertical: AppSpacing.s,
       ),
-      type: GhostSurfaceType.secondary,
+      type: StellSurfaceType.secondary,
       child: Row(
         children: [
-          GhostAvatar(
+          StellAvatar(
             alias: contact.alias,
             size: 44,
           ),

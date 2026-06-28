@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import '../colors.dart';
 import '../typography.dart';
 
-class GhostAvatar extends StatelessWidget {
+class StellAvatar extends StatelessWidget {
   final String? imageUrl;
   final String? alias;
   final double size;
   final Color? backgroundColor;
 
-  const GhostAvatar({
+  const StellAvatar({
     super.key,
     this.imageUrl,
     this.alias,

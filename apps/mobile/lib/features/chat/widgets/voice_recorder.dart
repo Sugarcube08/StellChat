@@ -134,7 +134,7 @@ class _VoiceRecorderState extends State<VoiceRecorder> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: colors.ghostAccent,
+                color: colors.stellAccent,
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.send_rounded, color: Theme.of(context).colorScheme.onPrimary, size: 20),

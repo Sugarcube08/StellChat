@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import '../spacing.dart';
-import 'ghost_surface.dart';
+import 'stell_surface.dart';
 
-class GhostCard extends StatelessWidget {
+class StellCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final double? width;
   final double? height;
-  final GhostSurfaceType type;
+  final StellSurfaceType type;
   final BorderRadius? borderRadius;
 
-  const GhostCard({
+  const StellCard({
     super.key,
     required this.child,
     this.onTap,
@@ -20,13 +20,13 @@ class GhostCard extends StatelessWidget {
     this.margin,
     this.width,
     this.height,
-    this.type = GhostSurfaceType.secondary,
+    this.type = StellSurfaceType.secondary,
     this.borderRadius,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget current = GhostSurface(
+    Widget current = StellSurface(
       type: type,
       width: width,
       height: height,

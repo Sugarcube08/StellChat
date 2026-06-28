@@ -19,14 +19,14 @@ class MyPassportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     
-    return GhostCard(
+    return StellCard(
       onTap: onTap,
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.l,
         vertical: AppSpacing.m,
       ),
       padding: const EdgeInsets.all(AppSpacing.l),
-      type: GhostSurfaceType.elevated,
+      type: StellSurfaceType.elevated,
       borderRadius: BorderRadius.circular(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,7 +55,7 @@ class MyPassportCard extends StatelessWidget {
                       'STELLAR WALLET PROFILE',
                       style: AppTypography.caption(context).copyWith(
                         fontWeight: FontWeight.w900,
-                        color: colors.ghostAccent,
+                        color: colors.stellAccent,
                         letterSpacing: 1.5,
                       ),
                     ),

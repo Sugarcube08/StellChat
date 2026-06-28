@@ -5,13 +5,13 @@ import '../animations.dart';
 import '../haptics.dart';
 import '../glass.dart';
 
-class GhostNavItem {
+class StellNavItem {
   final IconData outlineIcon;
   final IconData solidIcon;
   final String label;
   final int badgeCount;
 
-  const GhostNavItem({
+  const StellNavItem({
     required this.outlineIcon,
     required this.solidIcon,
     required this.label,
@@ -19,12 +19,12 @@ class GhostNavItem {
   });
 }
 
-class GhostNavigationBar extends StatelessWidget {
-  final List<GhostNavItem> items;
+class StellNavigationBar extends StatelessWidget {
+  final List<StellNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const GhostNavigationBar({
+  const StellNavigationBar({
     super.key,
     required this.items,
     required this.currentIndex,
@@ -51,10 +51,10 @@ class GhostNavigationBar extends StatelessWidget {
     );
   }
 
-  Widget _buildItem(BuildContext context, int index, GhostNavItem item) {
+  Widget _buildItem(BuildContext context, int index, StellNavItem item) {
     final isSelected = currentIndex == index;
     final colors = AppColors.of(context);
-    final activeColor = colors.ghostAccent;
+    final activeColor = colors.stellAccent;
     final inactiveColor = colors.secondaryText.withAlpha(120);
 
     return GestureDetector(
@@ -130,12 +130,12 @@ class GhostNavigationBar extends StatelessWidget {
   }
 }
 
-class GhostNavigationRail extends StatelessWidget {
-  final List<GhostNavItem> items;
+class StellNavigationRail extends StatelessWidget {
+  final List<StellNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const GhostNavigationRail({
+  const StellNavigationRail({
     super.key,
     required this.items,
     required this.currentIndex,
@@ -161,11 +161,11 @@ class GhostNavigationRail extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: colors.ghostAccent.withAlpha(30),
+                color: colors.stellAccent.withAlpha(30),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: Icon(Icons.shield_rounded, color: colors.ghostAccent, size: 24),
+                child: Icon(Icons.shield_rounded, color: colors.stellAccent, size: 24),
               ),
             ),
             const SizedBox(height: 40),
@@ -185,10 +185,10 @@ class GhostNavigationRail extends StatelessWidget {
     );
   }
 
-  Widget _buildRailItem(BuildContext context, int index, GhostNavItem item) {
+  Widget _buildRailItem(BuildContext context, int index, StellNavItem item) {
     final isSelected = currentIndex == index;
     final colors = AppColors.of(context);
-    final activeColor = colors.ghostAccent;
+    final activeColor = colors.stellAccent;
     final inactiveColor = colors.secondaryText.withAlpha(120);
 
     return GestureDetector(
@@ -212,7 +212,7 @@ class GhostNavigationRail extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   color: isSelected 
-                      ? colors.ghostAccent.withAlpha(20) 
+                      ? colors.stellAccent.withAlpha(20) 
                       : Colors.transparent,
                 ),
                 child: Icon(

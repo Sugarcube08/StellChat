@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../design_system/animations.dart';
 
-class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
+class StellColorsExtension extends ThemeExtension<StellColorsExtension> {
   final Color backgroundPrimary;
   final Color backgroundSecondary;
   final Color surfacePrimary;
@@ -19,7 +19,7 @@ class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
   final Color info;
   final Color accent;
 
-  const GhostColorsExtension({
+  const StellColorsExtension({
     required this.backgroundPrimary,
     required this.backgroundSecondary,
     required this.surfacePrimary,
@@ -43,10 +43,10 @@ class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
   Color get hairline => borderPrimary;
   Color get primaryText => textPrimary;
   Color get secondaryText => textSecondary;
-  Color get ghostAccent => accent;
+  Color get stellAccent => accent;
 
   @override
-  ThemeExtension<GhostColorsExtension> copyWith({
+  ThemeExtension<StellColorsExtension> copyWith({
     Color? backgroundPrimary,
     Color? backgroundSecondary,
     Color? surfacePrimary,
@@ -62,7 +62,7 @@ class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
     Color? info,
     Color? accent,
   }) {
-    return GhostColorsExtension(
+    return StellColorsExtension(
       backgroundPrimary: backgroundPrimary ?? this.backgroundPrimary,
       backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
       surfacePrimary: surfacePrimary ?? this.surfacePrimary,
@@ -81,14 +81,14 @@ class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
   }
 
   @override
-  ThemeExtension<GhostColorsExtension> lerp(
-    ThemeExtension<GhostColorsExtension>? other,
+  ThemeExtension<StellColorsExtension> lerp(
+    ThemeExtension<StellColorsExtension>? other,
     double t,
   ) {
-    if (other is! GhostColorsExtension) {
+    if (other is! StellColorsExtension) {
       return this;
     }
-    return GhostColorsExtension(
+    return StellColorsExtension(
       backgroundPrimary: Color.lerp(backgroundPrimary, other.backgroundPrimary, t)!,
       backgroundSecondary: Color.lerp(backgroundSecondary, other.backgroundSecondary, t)!,
       surfacePrimary: Color.lerp(surfacePrimary, other.surfacePrimary, t)!,
@@ -107,39 +107,39 @@ class GhostColorsExtension extends ThemeExtension<GhostColorsExtension> {
   }
 }
 
-class GhostTheme {
-  static const darkColors = GhostColorsExtension(
-    backgroundPrimary: Color(0xFF080808),
-    backgroundSecondary: Color(0xFF101010),
-    surfacePrimary: Color(0xFF181818),
-    surfaceSecondary: Color(0xFF202020),
-    borderPrimary: Color(0x14FFFFFF),
+class StellTheme {
+  static const darkColors = StellColorsExtension(
+    backgroundPrimary: Color(0xFF090B12),
+    backgroundSecondary: Color(0xFF10131C),
+    surfacePrimary: Color(0xFF10131C),
+    surfaceSecondary: Color(0xFF151A24),
+    borderPrimary: Color(0x0FFFFFFF), // rgba(255,255,255,0.06)
     borderMuted: Color(0x0AFFFFFF),
     textPrimary: Color(0xFFFFFFFF),
-    textSecondary: Color(0xB8FFFFFF),
-    textMuted: Color(0x66FFFFFF),
-    success: Color(0xFF3DDC97),
-    warning: Color(0xFFFFB74D),
-    error: Color(0xFFFF6B6B),
-    info: Color(0xFF7F7FFF),
-    accent: Color(0xFF7F7FFF),
+    textSecondary: Color(0xFFAEB7C6),
+    textMuted: Color(0xFF70798B),
+    success: Color(0xFF00D68F),
+    warning: Color(0xFFF5A524),
+    error: Color(0xFFFF5C7A),
+    info: Color(0xFF35B7FF),
+    accent: Color(0xFF6C4DFF),
   );
 
-  static const lightColors = GhostColorsExtension(
-    backgroundPrimary: Color(0xFFF5F5F7),
+  static const lightColors = StellColorsExtension(
+    backgroundPrimary: Color(0xFFF7F8FA),
     backgroundSecondary: Color(0xFFFFFFFF),
-    surfacePrimary: Color(0xFFEFEFF4),
-    surfaceSecondary: Color(0xFFE5E5EA),
-    borderPrimary: Color(0x14000000),
-    borderMuted: Color(0x0A000000),
-    textPrimary: Color(0xFF000000),
-    textSecondary: Color(0x99000000),
-    textMuted: Color(0x4D000000),
-    success: Color(0xFF2EAF7D),
-    warning: Color(0xFFE69C24),
+    surfacePrimary: Color(0xFFECEFF3),
+    surfaceSecondary: Color(0xFFE2E6EC),
+    borderPrimary: Color(0x12000000),
+    borderMuted: Color(0x06000000),
+    textPrimary: Color(0xFF090B12),
+    textSecondary: Color(0xFF6C7685),
+    textMuted: Color(0xFF8C96A5),
+    success: Color(0xFF00B87C),
+    warning: Color(0xFFD98A1E),
     error: Color(0xFFE53935),
-    info: Color(0xFF5C5CFF),
-    accent: Color(0xFF5C5CFF),
+    info: Color(0xFF269BE6),
+    accent: Color(0xFF5B3DF5),
   );
 
   static ThemeData get darkTheme => ThemeData(
@@ -148,11 +148,11 @@ class GhostTheme {
     scaffoldBackgroundColor: darkColors.backgroundPrimary,
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: GhostPageTransitionsBuilder(),
-        TargetPlatform.iOS: GhostPageTransitionsBuilder(),
-        TargetPlatform.linux: GhostPageTransitionsBuilder(),
-        TargetPlatform.macOS: GhostPageTransitionsBuilder(),
-        TargetPlatform.windows: GhostPageTransitionsBuilder(),
+        TargetPlatform.android: StellPageTransitionsBuilder(),
+        TargetPlatform.iOS: StellPageTransitionsBuilder(),
+        TargetPlatform.linux: StellPageTransitionsBuilder(),
+        TargetPlatform.macOS: StellPageTransitionsBuilder(),
+        TargetPlatform.windows: StellPageTransitionsBuilder(),
       },
     ),
     appBarTheme: AppBarTheme(
@@ -162,7 +162,7 @@ class GhostTheme {
       titleTextStyle: TextStyle(
         color: darkColors.textPrimary,
         fontSize: 18,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
       ),
       iconTheme: IconThemeData(color: darkColors.textPrimary),
@@ -170,11 +170,11 @@ class GhostTheme {
     colorScheme: ColorScheme(
       brightness: Brightness.dark,
       primary: darkColors.accent,
-      onPrimary: const Color(0xFF000000),
+      onPrimary: const Color(0xFFFFFFFF),
       secondary: darkColors.surfaceSecondary,
       onSecondary: darkColors.textPrimary,
       error: darkColors.error,
-      onError: const Color(0xFF000000),
+      onError: const Color(0xFFFFFFFF),
       surface: darkColors.backgroundSecondary,
       onSurface: darkColors.textPrimary,
     ),
@@ -187,11 +187,11 @@ class GhostTheme {
     scaffoldBackgroundColor: lightColors.backgroundPrimary,
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
-        TargetPlatform.android: GhostPageTransitionsBuilder(),
-        TargetPlatform.iOS: GhostPageTransitionsBuilder(),
-        TargetPlatform.linux: GhostPageTransitionsBuilder(),
-        TargetPlatform.macOS: GhostPageTransitionsBuilder(),
-        TargetPlatform.windows: GhostPageTransitionsBuilder(),
+        TargetPlatform.android: StellPageTransitionsBuilder(),
+        TargetPlatform.iOS: StellPageTransitionsBuilder(),
+        TargetPlatform.linux: StellPageTransitionsBuilder(),
+        TargetPlatform.macOS: StellPageTransitionsBuilder(),
+        TargetPlatform.windows: StellPageTransitionsBuilder(),
       },
     ),
     appBarTheme: AppBarTheme(
@@ -201,7 +201,7 @@ class GhostTheme {
       titleTextStyle: TextStyle(
         color: lightColors.textPrimary,
         fontSize: 18,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
         letterSpacing: 1.2,
       ),
       iconTheme: IconThemeData(color: lightColors.textPrimary),

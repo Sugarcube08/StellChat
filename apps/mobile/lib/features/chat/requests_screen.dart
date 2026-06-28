@@ -92,7 +92,7 @@ class RequestsScreen extends ConsumerWidget {
                           return true;
                         }
                       },
-                      child: GhostCard(
+                      child: StellCard(
                         onTap: () {
                           Navigator.push(
                             context,
@@ -103,10 +103,10 @@ class RequestsScreen extends ConsumerWidget {
                         },
                         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: AppSpacing.xs),
                         padding: const EdgeInsets.all(AppSpacing.m),
-                        type: GhostSurfaceType.secondary,
+                        type: StellSurfaceType.secondary,
                         child: Row(
                           children: [
-                            GhostAvatar(
+                            StellAvatar(
                               alias: 'Unknown',
                               size: 48,
                               backgroundColor: colors.elevatedSurface,
@@ -132,9 +132,9 @@ class RequestsScreen extends ConsumerWidget {
                               ),
                             ),
                             if (req.unreadCount > 0)
-                              GhostBadge(
+                              StellBadge(
                                 label: req.unreadCount.toString(),
-                                color: colors.ghostAccent,
+                                color: colors.stellAccent,
                                 textColor: Theme.of(context).colorScheme.onPrimary,
                               ),
                             const SizedBox(width: AppSpacing.s),

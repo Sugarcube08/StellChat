@@ -210,7 +210,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: msg.isMe ? colors.ghostAccent.withAlpha(40) : colors.elevatedSurface,
+          color: msg.isMe ? colors.stellAccent.withAlpha(40) : colors.elevatedSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: colors.hairline, width: 0.5),
         ),

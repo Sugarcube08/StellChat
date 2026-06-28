@@ -36,8 +36,8 @@ class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
             child: Column(
               children: [
                 // QR Card
-                GhostSurface(
-                  type: GhostSurfaceType.elevated,
+                StellSurface(
+                  type: StellSurfaceType.elevated,
                   padding: const EdgeInsets.all(AppSpacing.xl),
                   borderRadius: BorderRadius.circular(32),
                   child: Column(
@@ -75,7 +75,7 @@ class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
                       Text(
                         'STELLCHAT WALLET ADDRESS',
                         style: AppTypography.caption(context).copyWith(
-                          color: colors.ghostAccent,
+                          color: colors.stellAccent,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,
                           fontSize: 10,
@@ -87,8 +87,8 @@ class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
                 const SizedBox(height: AppSpacing.xl),
 
                 // Balances Section
-                GhostSurface(
-                  type: GhostSurfaceType.secondary,
+                StellSurface(
+                  type: StellSurfaceType.secondary,
                   padding: const EdgeInsets.all(AppSpacing.l),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,10 +131,10 @@ class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: GhostButton(
+                      child: StellButton(
                         label: 'COPY ADDRESS',
                         icon: Icons.copy,
-                        type: GhostButtonType.secondary,
+                        type: StellButtonType.secondary,
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: wallet.address));
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -145,10 +145,10 @@ class _MyPassportScreenState extends ConsumerState<MyPassportScreen> {
                     ),
                     const SizedBox(width: AppSpacing.m),
                     Expanded(
-                      child: GhostButton(
+                      child: StellButton(
                         label: 'REFRESH',
                         icon: Icons.refresh,
-                        type: GhostButtonType.primary,
+                        type: StellButtonType.primary,
                         onPressed: () async {
                           await wallet.fetchBalances();
                           if (mounted) {

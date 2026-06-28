@@ -165,15 +165,15 @@ class _ContactListScreenState extends ConsumerState<ContactListScreen>
   }) {
     final colors = AppColors.of(context);
     return Expanded(
-      child: GhostSurface(
-        type: GhostSurfaceType.secondary,
+      child: StellSurface(
+        type: StellSurfaceType.secondary,
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.m),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppSpacing.radiusM),
           child: Column(
             children: [
-              Icon(icon, color: colors.ghostAccent, size: 20),
+              Icon(icon, color: colors.stellAccent, size: 20),
               const SizedBox(height: 4),
               Text(
                 label,

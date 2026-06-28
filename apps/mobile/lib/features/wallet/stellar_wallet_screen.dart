@@ -122,8 +122,8 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
   }
 
   Widget _buildWalletBalanceCard(BuildContext context, dynamic wallet, dynamic colors) {
-    return GhostSurface(
-      type: GhostSurfaceType.secondary,
+    return StellSurface(
+      type: StellSurfaceType.secondary,
       padding: const EdgeInsets.all(AppSpacing.l),
       borderRadius: BorderRadius.circular(24),
       child: Column(
@@ -137,10 +137,10 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: colors.ghostAccent.withAlpha(20),
+                      color: colors.stellAccent.withAlpha(20),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.account_balance_wallet, size: 20, color: colors.ghostAccent),
+                    child: Icon(Icons.account_balance_wallet, size: 20, color: colors.stellAccent),
                   ),
                   const SizedBox(width: AppSpacing.s),
                   Text(
@@ -158,7 +158,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white24),
                     )
-                  : GhostButton(
+                  : StellButton(
                       label: wallet.isConnected ? 'DISCONNECT' : 'CONNECT WALLET',
                       onPressed: _toggleWalletConnection,
                     ),
@@ -267,10 +267,10 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
         (context, index) {
           final tx = txs[index];
           final isSent = tx['type'] == 'Sent';
-          return GhostCard(
+          return StellCard(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.l, vertical: 4),
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
-            type: GhostSurfaceType.secondary,
+            type: StellSurfaceType.secondary,
             child: ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(
@@ -368,7 +368,7 @@ class _StellarWalletScreenState extends ConsumerState<StellarWalletScreen> {
                 SnackBar(content: Text('Explorer URL copied: $url')),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: colors.ghostAccent, foregroundColor: Colors.black),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.stellAccent, foregroundColor: Colors.black),
             child: const Text('EXPLORE LEDGER'),
           ),
         ],

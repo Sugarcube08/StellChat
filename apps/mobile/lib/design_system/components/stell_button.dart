@@ -4,26 +4,26 @@ import '../spacing.dart';
 import '../typography.dart';
 import '../haptics.dart';
 
-enum GhostButtonType {
+enum StellButtonType {
   primary,
   secondary,
   ghost,
   danger,
 }
 
-class GhostButton extends StatelessWidget {
+class StellButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
-  final GhostButtonType type;
+  final StellButtonType type;
   final bool isLoading;
   final IconData? icon;
   final double? width;
 
-  const GhostButton({
+  const StellButton({
     super.key,
     required this.label,
     this.onPressed,
-    this.type = GhostButtonType.primary,
+    this.type = StellButtonType.primary,
     this.isLoading = false,
     this.icon,
     this.width,
@@ -38,20 +38,20 @@ class GhostButton extends StatelessWidget {
     Border? border;
 
     switch (type) {
-      case GhostButtonType.primary:
+      case StellButtonType.primary:
         backgroundColor = colors.primaryText;
         foregroundColor = colors.primaryBackground;
         break;
-      case GhostButtonType.secondary:
+      case StellButtonType.secondary:
         backgroundColor = colors.secondaryBackground;
         foregroundColor = colors.primaryText;
         border = Border.all(color: colors.hairline, width: 1);
         break;
-      case GhostButtonType.ghost:
+      case StellButtonType.ghost:
         backgroundColor = Colors.transparent;
         foregroundColor = colors.primaryText;
         break;
-      case GhostButtonType.danger:
+      case StellButtonType.danger:
         backgroundColor = colors.error.withAlpha(40);
         foregroundColor = colors.error;
         border = Border.all(color: colors.error.withAlpha(80), width: 1);

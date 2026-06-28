@@ -3,7 +3,7 @@ import '../colors.dart';
 import '../spacing.dart';
 import '../typography.dart';
 
-class GhostInput extends StatelessWidget {
+class StellInput extends StatelessWidget {
   final TextEditingController? controller;
   final String? hintText;
   final String? labelText;
@@ -17,7 +17,7 @@ class GhostInput extends StatelessWidget {
   final int? maxLines;
   final bool autofocus;
 
-  const GhostInput({
+  const StellInput({
     super.key,
     this.controller,
     this.hintText,
@@ -64,7 +64,7 @@ class GhostInput extends StatelessWidget {
           maxLines: maxLines,
           autofocus: autofocus,
           style: AppTypography.body(context),
-          cursorColor: colors.ghostAccent,
+          cursorColor: colors.stellAccent,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: AppTypography.body(context).copyWith(
@@ -85,7 +85,7 @@ class GhostInput extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppSpacing.radiusM),
-              borderSide: BorderSide(color: colors.ghostAccent, width: 1),
+              borderSide: BorderSide(color: colors.stellAccent, width: 1),
             ),
           ),
         ),
