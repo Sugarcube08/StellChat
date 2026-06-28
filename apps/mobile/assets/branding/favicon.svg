@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#35B7FF" />
+      <stop offset="100%" stop-color="#8D6BFF" />
+    </linearGradient>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&amp;display=swap');
+      .wordmark {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        fill: #FFFFFF;
+        font-size: 52px;
+        letter-spacing: 0.02em;
+      }
+      .wordmark-dark {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        fill: #090B12;
+        font-size: 52px;
+        letter-spacing: 0.02em;
+      }
+      .tagline {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 400;
+        fill: #AEB7C6;
+        font-size: 20px;
+        letter-spacing: 0.05em;
+      }
+      .tagline-dark {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 400;
+        fill: #70798B;
+        font-size: 20px;
+        letter-spacing: 0.05em;
+      }
+      .footer {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 500;
+        fill: #70798B;
+        font-size: 16px;
+        letter-spacing: 0.1em;
+      }
+    </style>
+  </defs>
+  <path d="M 256,106 C 338.8,106 406,173.2 406,256 C 406,300 387,339 356,367 C 385,385 410,380 420,360 C 405,395 375,410 330,403 C 306,406 281,406 256,406 C 173.2,406 106,338.8 106,256 C 106,173.2 173.2,106 256,106 Z" fill="none" stroke="url(#brandGrad)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 256,206 Q 256,256 206,256 Q 256,256 256,306 Q 256,256 306,256 Q 256,256 256,206 Z" fill="#FFFFFF"/>
+  <path d="M 345,155 Q 345,175 325,175 Q 345,175 345,195 Q 345,175 365,175 Q 345,175 345,155 Z" fill="#FFFFFF"/>
+</svg>

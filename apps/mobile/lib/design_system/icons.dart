@@ -1,0 +1,32 @@
+class AppIcons {
+  static const String chats = 'assets/icons/chats.svg';
+  static const String groups = 'assets/icons/groups.svg';
+  static const String wallet = 'assets/icons/wallet.svg';
+  static const String payments = 'assets/icons/payments.svg';
+  static const String request = 'assets/icons/request.svg';
+  static const String verified = 'assets/icons/verified.svg';
+  static const String shield = 'assets/icons/shield.svg';
+  static const String security = 'assets/icons/security.svg';
+  static const String settings = 'assets/icons/settings.svg';
+  static const String camera = 'assets/icons/camera.svg';
+  static const String gallery = 'assets/icons/gallery.svg';
+  static const String attachment = 'assets/icons/attachment.svg';
+  static const String voice = 'assets/icons/voice.svg';
+  static const String video = 'assets/icons/video.svg';
+  static const String location = 'assets/icons/location.svg';
+  static const String profile = 'assets/icons/profile.svg';
+  static const String notification = 'assets/icons/notification.svg';
+  static const String privacy = 'assets/icons/privacy.svg';
+  static const String send = 'assets/icons/send.svg';
+  static const String back = 'assets/icons/back.svg';
+  static const String search = 'assets/icons/search.svg';
+  static const String menu = 'assets/icons/menu.svg';
+  static const String more = 'assets/icons/more.svg';
+  static const String archive = 'assets/icons/archive.svg';
+  static const String delete = 'assets/icons/delete.svg';
+  static const String edit = 'assets/icons/edit.svg';
+  static const String download = 'assets/icons/download.svg';
+  static const String upload = 'assets/icons/upload.svg';
+  static const String lock = 'assets/icons/lock.svg';
+  static const String unlock = 'assets/icons/unlock.svg';
+}

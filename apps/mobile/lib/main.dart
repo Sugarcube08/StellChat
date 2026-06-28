@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sodium/sodium_sumo.dart';
-import 'core/theme/ghost_theme.dart';
+import 'core/theme/stell_theme.dart';
 import 'core/providers.dart';
 import 'design_system/colors.dart';
+import 'design_system/spacing.dart';
+import 'design_system/typography.dart';
 
 import 'core/widgets/navigation_shell.dart';
 import 'features/home/onboarding_screen.dart';
@@ -12,6 +15,7 @@ import 'core/app_initializer.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:app_links/app_links.dart';
 import 'dart:convert';
 import 'core/stellar/stellar_wallet_service.dart';
@@ -342,8 +346,8 @@ class _GhostAppState extends ConsumerState<GhostApp> with WidgetsBindingObserver
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'StellChat',
-      theme: GhostTheme.lightTheme,
-      darkTheme: GhostTheme.darkTheme,
+      theme: StellTheme.lightTheme,
+      darkTheme: StellTheme.darkTheme,
       themeMode: themeMode,
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
@@ -400,11 +404,50 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _starController;
+  final List<Star> _stars = [];
+  double _logoOpacity = 0.0;
+
   @override
   void initState() {
     super.initState();
+    _starController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 40),
+    )..repeat();
+    _generateStars();
+    _animateLogo();
     _checkInitialization();
+  }
+
+  void _generateStars() {
+    final random = math.Random(12345);
+    for (int i = 0; i < 50; i++) {
+      _stars.add(Star(
+        x: random.nextDouble(),
+        y: random.nextDouble(),
+        size: random.nextDouble() * 1.5 + 0.5,
+        opacity: random.nextDouble() * 0.4 + 0.1,
+        speed: random.nextDouble() * 0.03 + 0.01,
+      ));
+    }
+  }
+
+  void _animateLogo() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _logoOpacity = 1.0;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _starController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkInitialization() async {
@@ -525,25 +568,112 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final colors = AppColors.of(context);
     return Scaffold(
       backgroundColor: colors.backgroundPrimary,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? const Color(0xFF0A0A0A)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
+      body: Stack(
+        children: [
+          // Animated Star Field
+          AnimatedBuilder(
+            animation: _starController,
+            builder: (context, child) {
+              return CustomPaint(
+                painter: StarFieldPainter(_stars, _starController.value),
+                size: Size.infinite,
+              );
+            },
+          ),
+          // Content
+          Center(
+            child: AnimatedOpacity(
+              opacity: _logoOpacity,
+              duration: const Duration(seconds: 1),
+              curve: Curves.easeInOut,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 3),
+                  // Centered logo icon
+                  SvgPicture.asset(
+                    'assets/branding/icon.svg',
+                    height: 120,
+                    width: 120,
+                  ),
+                  const SizedBox(height: AppSpacing.m),
+                  // Wordmark underneath
+                  SvgPicture.asset(
+                    'assets/branding/wordmark.svg',
+                    height: 48,
+                  ),
+                  const SizedBox(height: AppSpacing.s),
+                  // Tagline
+                  Text(
+                    'Private Messaging with Stellar Payments',
+                    style: AppTypography.secondary(context).copyWith(
+                      color: colors.textSecondary.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const Spacer(flex: 2),
+                  // Footer
+                  Text(
+                    'POWERED BY STELLAR',
+                    style: AppTypography.caption(context).copyWith(
+                      color: colors.textMuted.withOpacity(0.5),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                ],
               ),
-              child: Image.asset('assets/images/banner.png', height: 120, fit: BoxFit.contain),
             ),
-            const SizedBox(height: 64),
-            CircularProgressIndicator(color: colors.textMuted.withAlpha(50), strokeWidth: 1),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class StarFieldPainter extends CustomPainter {
+  final List<Star> stars;
+  final double animationValue;
+
+  StarFieldPainter(this.stars, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    for (final star in stars) {
+      double y = (star.y * size.height - (animationValue * star.speed * size.height)) % size.height;
+      if (y < 0) y += size.height;
+      
+      double opacity = star.opacity;
+      if (y < 100) {
+        opacity *= (y / 100);
+      } else if (y > size.height - 100) {
+        opacity *= ((size.height - y) / 100);
+      }
+      
+      paint.color = Colors.white.withOpacity(opacity.clamp(0.0, 1.0));
+      canvas.drawCircle(Offset(star.x * size.width, y), star.size, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant StarFieldPainter oldDelegate) => true;
+}
+
+class Star {
+  final double x;
+  final double y;
+  final double size;
+  final double opacity;
+  final double speed;
+
+  Star({
+    required this.x,
+    required this.y,
+    required this.size,
+    required this.opacity,
+    required this.speed,
+  });
 }
