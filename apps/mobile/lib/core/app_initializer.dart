@@ -98,13 +98,6 @@ class AppInitializer {
       if (!Hive.isBoxOpen('blocked_identities')) {
         await Hive.openBox<String>('blocked_identities');
       }
-
-      // 4. Identity
-      await container.read(identityServiceProvider).initIdentity();
-      await container.read(identityServiceProvider).saveBackgroundCache(
-        customHiveKey: base64Encode(encryptionKey),
-      );
-
       status = InitializationStatus.success;
     } catch (e) {
       status = InitializationStatus.failure;

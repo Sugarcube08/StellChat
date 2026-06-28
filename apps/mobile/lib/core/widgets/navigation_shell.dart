@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../features/chat/chat_screens.dart';
 import '../../features/wallet/stellar_wallet_screen.dart';
-import '../../features/settings/identity_vault_screen.dart';
 import '../../features/contacts/contact_list_screen.dart';
 import '../../design_system/colors.dart';
 import '../../design_system/components/components.dart';
@@ -237,18 +236,12 @@ class _NavigationShellState extends ConsumerState<NavigationShell> {
         solidIcon: Icons.account_balance_wallet,
         label: 'Wallet',
       ),
-      const GhostNavItem(
-        outlineIcon: Icons.shield_outlined,
-        solidIcon: Icons.shield,
-        label: 'Vault',
-      ),
     ];
 
     final List<Widget> screens = [
       const ChatsScreen(),
       const ContactListScreen(),
       const StellarWalletScreen(),
-      const IdentityVaultScreen(),
     ];
 
     if (isDesktop) {
