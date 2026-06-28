@@ -42,7 +42,7 @@ class Message extends HiveObject {
   final MessageType type;
 
   @HiveField(7)
-  final Map<String, dynamic>? metadata;
+  Map<String, dynamic>? metadata;
 
   @HiveField(8)
   bool isRequest;

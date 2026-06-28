@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/crypto/identity_service.dart';
 
 class DMEnvelope {
   final String id;
@@ -54,7 +53,7 @@ class DMService {
     required String plaintext,
     required String recipientPublicId,
     required Uint8List recipientXid,
-    required Identity senderIdentity,
+    required dynamic senderIdentity,
     String? messageId,
   }) async {
     // 1. Generate Message Key

@@ -14,7 +14,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:app_links/app_links.dart';
 import 'dart:convert';
-import 'core/crypto/identity_service.dart';
+import 'core/stellar/stellar_wallet_service.dart';
+import 'package:stellar_flutter_sdk/stellar_flutter_sdk.dart' as stellar;
 import 'features/contacts/contact_actions.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -59,9 +60,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   
   late final Uint8List encryptionKey;
   late final RelayProfile relay;
-  late final IdentityService idService;
   late final BackgroundRelayManager relayManager;
   late final SodiumSumo sodium;
+  String? walletAddress;
+  WalletIdentity? walletId;
 
   try {
     final cacheFile = await StorageDirectoryHelper.getBackgroundCacheFile();
@@ -119,14 +121,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     }
 
     final storage = const FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: true));
-    idService = IdentityService(sodium, storage);
-    
-    // Load identity from cache (bypasses Keystore/SecureStorage)
-    final loaded = await idService.loadIdentityFromCache();
-    if (!loaded || !idService.hasIdentity) {
-      // ignore: avoid_print
+    walletAddress = await storage.read(key: 'wallet_address');
+    final sessionToken = await storage.read(key: 'session_token');
+    final seedB64 = await storage.read(key: 'wallet_seed_b64');
+    if (walletAddress == null || sessionToken == null || seedB64 == null) {
       return;
     }
+
+    final seedBytes = base64Decode(seedB64);
+    final stellar.KeyPair kp = stellar.KeyPair.fromSecretSeedList(seedBytes);
+    final ed25519Seed = SecureKey.fromList(sodium, kp.privateKey!);
+    final ed25519KeyPair = sodium.crypto.sign.seedKeyPair(ed25519Seed);
+    
+    final x25519Pk = sodium.crypto.sign.pkToCurve25519(ed25519KeyPair.publicKey);
+    final x25519Sk = sodium.crypto.sign.skToCurve25519(ed25519KeyPair.secretKey);
+    final x25519KeyPair = KeyPair(publicKey: x25519Pk, secretKey: x25519Sk);
+    
+    walletId = WalletIdentity(
+      publicId: walletAddress,
+      ed25519KeyPair: ed25519KeyPair,
+      x25519KeyPair: x25519KeyPair,
+    );
 
     relayManager = BackgroundRelayManager(storage, relay);
   } catch (e) {
@@ -137,7 +152,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     overrides: [
       sodiumProvider.overrideWithValue(sodium),
       secureStorageProvider.overrideWithValue(const FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: true))),
-      identityServiceProvider.overrideWithValue(idService),
+      identityServiceProvider.overrideWithValue(IdentityServiceWrapper(sodium, walletId, walletAddress)),
       relayManagerProvider.overrideWithValue(relayManager),
     ],
   );
@@ -295,52 +310,7 @@ class _GhostAppState extends ConsumerState<GhostApp> with WidgetsBindingObserver
   }
 
   void _showDeepLinkPreview(BuildContext context, String payload) {
-    try {
-      final pkg = IdentityPackage.fromEncodedString(payload);
-      final idService = ref.read(identityServiceProvider);
-      final eidBytes = base64Decode(pkg.eid);
-      final publicId = idService.derivePublicId(eidBytes);
-
-      showDialog(
-        context: context,
-        builder: (dialogContext) {
-          final dialogColors = AppColors.of(dialogContext);
-          return AlertDialog(
-            backgroundColor: dialogColors.backgroundSecondary,
-            title: const Text('NEW IDENTITY LINK'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('An identity package was shared via deep link.', style: TextStyle(color: dialogColors.textSecondary)),
-                const SizedBox(height: 16),
-                Text(publicId, style: TextStyle(fontWeight: FontWeight.bold, color: dialogColors.accent)),
-                const SizedBox(height: 8),
-                Text('Would you like to view and add this contact?', style: TextStyle(fontSize: 12, color: dialogColors.textPrimary)),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext), 
-                child: Text('CANCEL', style: TextStyle(color: dialogColors.textMuted))
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  processScannedData(context, payload);
-                }, 
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: dialogColors.accent,
-                  foregroundColor: dialogColors.backgroundPrimary,
-                ),
-                child: const Text('ADD CONTACT')
-              ),
-            ],
-          );
-        },
-      );
-    } catch (_) {
-      // Ignore
-    }
+    // Deprecated in favor of wallet address links
   }
 
   @override
@@ -439,8 +409,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _checkInitialization() async {
     final initializer = ref.read(appInitializerProvider);
-    
-    // Wait for initializer to finish if it's already running
     while (initializer.status == InitializationStatus.initializing || 
            initializer.status == InitializationStatus.idle) {
       await Future.delayed(const Duration(milliseconds: 200));
@@ -449,182 +417,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     if (initializer.status == InitializationStatus.failure) {
-      _showInitializationError(initializer.errorMessage ?? 'Unknown fatal error during startup.');
+      _showInitializationError(initializer.errorMessage ?? 'Fatal initialization failure.');
       return;
     }
 
-    final idService = ref.read(identityServiceProvider);
-    if (!idService.hasIdentity) {
-      // Check if we should have had an identity
-      final flagFile = await StorageDirectoryHelper.getIdentityFlagFile();
-      if (await flagFile.exists()) {
+    final wallet = ref.read(stellarWalletServiceProvider);
+    if (!wallet.isConnected) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _showIdentityMissingDialog();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          );
         }
-        return;
-      }
+      });
+      return;
     }
 
-    // Initialization success, proceed to identity check
     _proceedToApp();
-  }
-
-  void _showIdentityMissingDialog() {
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: colors.backgroundSecondary,
-        title: const Text('Identity Warning'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your identity data was found but couldn\'t be loaded. '
-              'Your system keyring might be locked, or data may have been cleared.',
-              style: TextStyle(color: colors.textSecondary)
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'You can try restarting the app or restore from your 24-word seed phrase.',
-              style: TextStyle(color: colors.textMuted, fontSize: 12)
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showResetConfirmDialog();
-            },
-            child: Text('RESET', style: TextStyle(color: colors.error)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showRecoverDialog();
-            },
-            child: Text('RECOVER', style: TextStyle(color: colors.accent)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ref.read(appInitializerProvider).status = InitializationStatus.idle;
-              _checkInitialization();
-            },
-            child: Text('RETRY', style: TextStyle(color: colors.textPrimary)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRecoverDialog() {
-    final colors = AppColors.of(context);
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: colors.backgroundSecondary,
-        title: const Text('RECOVER IDENTITY'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          style: TextStyle(color: colors.textPrimary, fontSize: 12, fontFamily: 'monospace'),
-          decoration: const InputDecoration(
-            hintText: 'Enter your 24-word seed phrase...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('CANCEL', style: TextStyle(color: colors.textMuted)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
-              final seed = controller.text.trim();
-              if (seed.isEmpty) return;
-              try {
-                final idService = ref.read(identityServiceProvider);
-                final appInit = ref.read(appInitializerProvider);
-
-                await idService.restoreIdentity(seed);
-                if (!context.mounted) return;
-                
-                Navigator.pop(dialogContext); // Close recovery dialog
-                appInit.status = InitializationStatus.idle;
-                await appInit.initialize();
-                
-                if (!mounted) return;
-                _checkInitialization();
-              } catch (e) {
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(content: Text('Recovery failed: $e')),
-                );
-              }
-            },
-            child: Text('RESTORE', style: TextStyle(color: colors.accent)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showResetConfirmDialog() {
-    final colors = AppColors.of(context);
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: colors.backgroundSecondary,
-        title: const Text('RESET ALL LOCAL DATA?'),
-        content: Text(
-          'This action is irreversible. All local contacts, messages, and key rings will be wiped. '
-          'You will start fresh as a new installation.',
-          style: TextStyle(color: colors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('CANCEL', style: TextStyle(color: colors.textMuted)),
-          ),
-          TextButton(
-            onPressed: () async {
-              final idService = ref.read(identityServiceProvider);
-              final contactService = ref.read(contactServiceProvider);
-              final chatRepo = ref.read(chatRepositoryProvider);
-              final relayManager = ref.read(relayManagerProvider);
-              final appInit = ref.read(appInitializerProvider);
-
-              Navigator.pop(dialogContext); // Close confirm
-              
-              // Wipe local DBs & Secure Storage
-              await idService.wipeIdentity();
-              await contactService.clearAll();
-              await chatRepo.dangerouslyClearAll();
-              await relayManager.panicWipe();
-              
-              // Reset status & re-run initialization
-              appInit.status = InitializationStatus.idle;
-              await appInit.initialize();
-              
-              if (!mounted) return;
-              _checkInitialization();
-            },
-            child: Text('RESET', style: TextStyle(color: colors.error)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showInitializationError(String message) {
     final colors = AppColors.of(context);
-    final isKeyringError = message.contains('Secure storage') || message.contains('keyring');
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       showDialog(
@@ -632,17 +446,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           backgroundColor: colors.backgroundSecondary,
-          title: Text(isKeyringError ? 'Identity Found' : 'STARTUP FAILURE'),
+          title: const Text('STARTUP FAILURE'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                isKeyringError 
-                    ? 'Secure storage unavailable' 
-                    : 'StellChat could not initialize core services.', 
-                style: TextStyle(color: colors.textSecondary)
-              ),
+              Text('StellChat could not initialize core database storage.', style: TextStyle(color: colors.textSecondary)),
               const SizedBox(height: 16),
               Text(message, style: TextStyle(color: colors.error, fontSize: 11, fontFamily: 'monospace')),
             ],
@@ -650,28 +459,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _showResetConfirmDialog();
-              },
-              child: Text(
-                isKeyringError ? 'RESET IDENTITY' : 'WIPE DATA', 
-                style: TextStyle(color: colors.error)
-              ),
-            ),
-            if (isKeyringError)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  _showRecoverDialog();
-                },
-                child: Text('RECOVER', style: TextStyle(color: colors.accent)),
-              ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
+                Navigator.pop(context);
                 ref.read(appInitializerProvider).status = InitializationStatus.idle;
-                ref.read(appInitializerProvider).initialize(); // Start initialization again
-                _checkInitialization(); // Re-run state checking
+                ref.read(appInitializerProvider).initialize();
+                _checkInitialization();
               },
               child: Text('RETRY', style: TextStyle(color: colors.textPrimary)),
             ),
@@ -683,9 +474,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   Future<void> _proceedToApp() async {
     try {
-      final idService = ref.read(identityServiceProvider);
-      
-      if (!idService.hasIdentity) {
+      final wallet = ref.read(stellarWalletServiceProvider);
+      if (!wallet.isConnected) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             Navigator.pushReplacement(
@@ -697,16 +487,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         return;
       }
 
-      // Auto-connect to relay if available
       final activeRelayFuture = ref.read(activeRelayProvider.future);
       final relayManager = ref.read(relayManagerProvider);
       final wsService = ref.read(webSocketServiceProvider);
 
       final relay = await activeRelayFuture;
       if (mounted && relay != null) {
-        relayManager.wakeUpRelay(relay);
-        wsService.connect(relay);
-        // Listeners are now handled by ChatRepository
+        final authenticatedRelay = RelayProfile(
+          id: relay.id,
+          label: relay.label,
+          websocketUrl: "${relay.websocketUrl}?token=${wallet.sessionToken}",
+          apiUrl: relay.apiUrl,
+          token: wallet.sessionToken,
+        );
+        relayManager.wakeUpRelay(authenticatedRelay);
+        wsService.connect(authenticatedRelay);
       }
 
       if (!mounted) return;

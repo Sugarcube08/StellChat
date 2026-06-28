@@ -7,7 +7,6 @@ import 'chat_repository.dart';
 import '../contacts/contact_resolver.dart';
 import '../contacts/contact_service.dart';
 import '../contacts/contact.dart';
-import '../../core/crypto/identity_service.dart';
 import 'conversation_state.dart';
 import '../media/media_service.dart';
 
@@ -37,7 +36,7 @@ class ConversationService {
   final ChatRepository _chatRepository;
   final ContactResolver _contactResolver;
   final ContactService _contactService;
-  final IdentityService _idService;
+  final dynamic _idService;
   final MediaService _mediaService;
 
   ConversationService(

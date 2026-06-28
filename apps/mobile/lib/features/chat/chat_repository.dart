@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'message.dart';
 import 'dm_service.dart';
 import 'conversation_state.dart';
-import '../../core/crypto/identity_service.dart';
 import '../../core/network/websocket_service.dart';
 import '../../core/notification_service.dart';
 import '../contacts/contact_service.dart';
@@ -24,7 +23,7 @@ import '../../core/providers.dart';
 
 class ChatRepository with WidgetsBindingObserver {
   final Ref? _ref;
-  IdentityService? _idServiceField;
+  dynamic _idServiceField;
   DMService? _dmServiceField;
   ContactService? _contactServiceField;
   WebSocketService? _wsServiceField;
@@ -33,7 +32,7 @@ class ChatRepository with WidgetsBindingObserver {
   MediaService? _mediaServiceField;
   RelayManager? _relayManagerField;
 
-  IdentityService get _idService => _idServiceField ?? _ref!.read(identityServiceProvider);
+  dynamic get _idService => _idServiceField ?? _ref!.read(identityServiceProvider);
   DMService get _dmService => _dmServiceField ?? _ref!.read(dmServiceProvider);
   ContactService get _contactService => _contactServiceField ?? _ref!.read(contactServiceProvider);
   WebSocketService get _wsService => _wsServiceField ?? _ref!.read(webSocketServiceProvider);
@@ -54,7 +53,7 @@ class ChatRepository with WidgetsBindingObserver {
   static const String _lastSyncKey = 'last_sync_t';
 
   ChatRepository(
-    IdentityService idService, 
+    dynamic idService, 
     DMService dmService, 
     ContactService contactService, 
     WebSocketService wsService,

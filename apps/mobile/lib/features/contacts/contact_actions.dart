@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import '../../core/providers.dart';
 import '../contacts/contact.dart';
-import '../../core/crypto/identity_service.dart';
+import 'package:stellar_flutter_sdk/stellar_flutter_sdk.dart' as stellar;
 import '../../design_system/colors.dart';
 
 mixin ContactActions<T extends ConsumerStatefulWidget> on ConsumerState<T> {
@@ -195,25 +195,23 @@ mixin ContactActions<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   void processScannedData(BuildContext context, String data) async {
     try {
-      final idService = ref.read(identityServiceProvider);
-      final pkg = IdentityPackage.fromEncodedString(data);
-      final isValid = idService.verifyPackage(pkg);
-      if (!isValid) throw Exception('Invalid package signature');
+      final cleanData = data.trim();
+      if (!cleanData.startsWith('G') || cleanData.length != 56) {
+        throw Exception('Invalid Stellar address format');
+      }
 
-      final eidBytes = base64Decode(pkg.eid);
-      final xidBytes = base64Decode(pkg.xid);
-      
-      final publicId = idService.derivePublicId(eidBytes);
-      final fingerprint = idService.calculateFingerprint(eidBytes, xidBytes);
+      final kp = stellar.KeyPair.fromAccountId(cleanData);
+      final ed25519PubKey = kp.publicKey;
+      final sodium = ref.read(sodiumProvider);
+      final x25519PubKey = sodium.crypto.sign.pkToCurve25519(ed25519PubKey);
 
       final contact = Contact(
-        publicId: publicId,
-        alias: 'New Contact',
-        eid: pkg.eid,
-        xid: pkg.xid,
-        fingerprint: fingerprint,
+        publicId: cleanData,
+        alias: 'Contact ${cleanData.substring(0, 4)}...${cleanData.substring(52)}',
+        eid: base64Encode(ed25519PubKey),
+        xid: base64Encode(x25519PubKey),
+        fingerprint: cleanData.substring(0, 8),
         createdAt: DateTime.now(),
-        preferredRelay: pkg.relays.isNotEmpty ? pkg.relays.first : null,
       );
 
       await ref.read(contactServiceProvider).saveContact(contact);

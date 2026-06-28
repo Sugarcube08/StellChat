@@ -8,12 +8,11 @@ import 'package:video_compress/video_compress.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import '../../core/network/relay_manager.dart';
-import '../../core/crypto/identity_service.dart';
 import 'attachment_envelope.dart';
 
 class MediaService {
   final SodiumSumo sodium;
-  final IdentityService _idService;
+  final dynamic _idService;
 
   MediaService(this.sodium, this._idService);
 
