@@ -74,6 +74,8 @@ class WebSocketService {
             .setTransports(['websocket'])
             .enableAutoConnect()
             .enableForceNew() // Ensure a fresh instance
+            .setAuth(profile.token != null ? {'token': profile.token} : {})
+            .setQuery(profile.token != null ? {'token': profile.token} : {})
             .setExtraHeaders(
               profile.token != null
                   ? {'Authorization': 'Bearer ${profile.token}'}
@@ -101,11 +103,17 @@ class WebSocketService {
     _listenerSetupDone = true;
 
     _socket!.onConnect((_) {
-      // ignore: avoid_print
-      // ignore: avoid_print
+      _isAuthenticated = true;
+      final callback = _callbacks['identity.verified'];
+      if (callback != null) {
+        try {
+          callback({'status': 'verified'});
+        } catch (_) {}
+      }
     });
 
     _socket!.on('reconnect', (_) {
+      _isAuthenticated = true;
     });
 
     _socket!.on('identity.challenge', (data) async {
