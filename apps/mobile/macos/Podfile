@@ -1,0 +1,42 @@
+# Standard Flutter macOS Podfile with deployment target overrides
+
+# The next line is used by Flutter to locate generated config file.
+import_file = File.expand_path(File.join('..', 'Flutter', 'ephemeral', 'Flutter-Generated.xcconfig'), __FILE__)
+if File.exist?(import_file)
+  File.readlines(import_file).each do |line|
+    variable, value = line.split('=')
+    if variable == 'FLUTTER_ROOT'
+      $flutter_root = value.strip
+    end
+  end
+end
+
+if $flutter_root.nil?
+  # Fallback to environment variable if xcconfig is missing
+  $flutter_root = ENV['FLUTTER_ROOT']
+end
+
+if $flutter_root.nil?
+  puts "FLUTTER_ROOT not found. Ensure you have run 'flutter pub get'"
+  exit 1
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), $flutter_root)
+
+platform :osx, '11.0'
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_macos_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '11.0'
+    end
+  end
+end
