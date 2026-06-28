@@ -1,18 +1,16 @@
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:stellchat/features/chat/dm_service.dart';
-import 'package:stellchat/core/crypto/identity_service.dart';
-import 'package:bip39/bip39.dart' as bip39;
+import 'package:stellchat/core/stellar/stellar_wallet_service.dart';
 
 void main() {
   test('Hybrid Encryption (DMService) works', () async {
     final sodium = await SodiumSumoInit.init();
     final dmService = DMService(sodium);
     
-    // Helper to derive keys without IdentityService storage dependencies
-    Identity deriveIdentity(String mnemonic, String id) {
-      final seed = bip39.mnemonicToSeed(mnemonic);
-      final ed25519Seed = SecureKey.fromList(sodium, seed.sublist(0, 32));
+    WalletIdentity deriveIdentity(Uint8List seed, String id) {
+      final ed25519Seed = SecureKey.fromList(sodium, seed);
       final ed25519 = sodium.crypto.sign.seedKeyPair(ed25519Seed);
       
       final sumo = sodium;
@@ -20,18 +18,18 @@ void main() {
       final x25519Sk = sumo.crypto.sign.skToCurve25519(ed25519.secretKey);
       final x25519 = KeyPair(publicKey: x25519Pk, secretKey: x25519Sk);
 
-      return Identity(
-        mnemonic: mnemonic,
+      return WalletIdentity(
+        publicId: id,
         ed25519KeyPair: ed25519,
         x25519KeyPair: x25519,
-        publicId: id,
-        fingerprint: 'test',
-        deviceId: 'test',
       );
     }
 
-    final senderIdentity = deriveIdentity(bip39.generateMnemonic(strength: 256), 'alice');
-    final recipientIdentity = deriveIdentity(bip39.generateMnemonic(strength: 256), 'bob');
+    final aliceSeed = Uint8List.fromList(List.generate(32, (i) => i));
+    final bobSeed = Uint8List.fromList(List.generate(32, (i) => i + 10));
+
+    final senderIdentity = deriveIdentity(aliceSeed, 'alice');
+    final recipientIdentity = deriveIdentity(bobSeed, 'bob');
     
     const plaintext = 'Hello, this is a hybrid encrypted message!';
     

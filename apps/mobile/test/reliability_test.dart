@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'dart:io';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:stellchat/features/chat/dm_service.dart';
-import 'package:stellchat/core/crypto/identity_service.dart';
+import 'package:stellchat/core/stellar/stellar_wallet_service.dart';
 import 'package:stellchat/features/chat/chat_repository.dart';
 import 'package:stellchat/features/chat/message.dart';
 import 'package:stellchat/features/contacts/contact_service.dart';
@@ -14,7 +14,6 @@ import 'package:stellchat/features/media/media_service.dart';
 import 'package:stellchat/core/network/relay_manager.dart';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:bip39/bip39.dart' as bip39;
 import 'package:hive/hive.dart';
 
 class ManualMockMediaManager implements MediaManager {
@@ -80,26 +79,20 @@ class ManualMockContactService implements ContactService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class ManualMockIdentityService implements IdentityService {
+class ManualMockIdentityService {
   final SodiumSumo _sodium;
-  Identity? _identity;
+  dynamic _identity;
   ManualMockIdentityService(this._sodium);
 
-  @override
   SodiumSumo get sodium => _sodium;
-  @override
-  Identity? get currentIdentity => _identity;
-  void setIdentity(Identity id) => _identity = id;
-  @override
+  dynamic get currentIdentity => _identity;
+  void setIdentity(dynamic id) => _identity = id;
   String derivePublicId(Uint8List ed25519PubKey) {
-    // In test, we know Bob's key vs Alice's key
     if (_identity != null && listEquals(ed25519PubKey, _identity!.ed25519KeyPair.publicKey)) {
       return _identity!.publicId;
     }
     return 'id-bob'; // Fallback for test sender
   }
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class ManualMockMediaService implements MediaService {
@@ -142,29 +135,28 @@ void main() {
     final dmService = DMService(sodium);
     final idService = ManualMockIdentityService(sodium);
     
-    Identity deriveIdentity(String mnemonic, String idSuffix) {
-      final seed = bip39.mnemonicToSeed(mnemonic);
-      final ed25519Seed = SecureKey.fromList(sodium, seed.sublist(0, 32));
+    WalletIdentity deriveIdentity(Uint8List seed, String idSuffix) {
+      final ed25519Seed = SecureKey.fromList(sodium, seed);
       final ed25519 = sodium.crypto.sign.seedKeyPair(ed25519Seed);
       final sumo = sodium;
       final x25519Pk = sumo.crypto.sign.pkToCurve25519(ed25519.publicKey);
       final x25519Sk = sumo.crypto.sign.skToCurve25519(ed25519.secretKey);
       final x25519 = KeyPair(publicKey: x25519Pk, secretKey: x25519Sk);
 
-      return Identity(
-        mnemonic: mnemonic,
+      return WalletIdentity(
+        publicId: 'id-$idSuffix',
         ed25519KeyPair: ed25519,
         x25519KeyPair: x25519,
-        publicId: 'id-$idSuffix',
-        fingerprint: 'fp-$idSuffix',
-        deviceId: 'dev-$idSuffix',
       );
     }
 
-    final aliceIdentity = deriveIdentity(bip39.generateMnemonic(strength: 256), 'alice');
+    final aliceSeed = Uint8List.fromList(List.generate(32, (i) => i));
+    final bobSeed = Uint8List.fromList(List.generate(32, (i) => i + 10));
+
+    final aliceIdentity = deriveIdentity(aliceSeed, 'alice');
     idService.setIdentity(aliceIdentity);
     
-    final bobIdentity = deriveIdentity(bip39.generateMnemonic(strength: 256), 'bob');
+    final bobIdentity = deriveIdentity(bobSeed, 'bob');
 
     final mockWs = ManualMockWebSocketService();
     final mockContacts = ManualMockContactService();

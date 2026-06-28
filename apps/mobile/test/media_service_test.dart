@@ -2,16 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sodium/sodium_sumo.dart';
 import 'package:stellchat/features/media/media_service.dart';
 import 'package:stellchat/features/media/attachment_envelope.dart';
-import 'package:stellchat/core/crypto/identity_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
 void main() {
   test('Media Cryptography: Encryption/Decryption Integrity', () async {
     final sodium = await SodiumSumoInit.init();
-    final idService = IdentityService(sodium, const FlutterSecureStorage());
-    final mediaService = MediaService(sodium, idService);
+    final mediaService = MediaService(sodium, null);
     
     final plaintext = Uint8List.fromList(utf8.encode('This is a secret image data blob'));
     
