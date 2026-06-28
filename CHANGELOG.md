@@ -2,11 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.2.2] - 2026-06-12
+## [1.0.0-hackathon] - 2026-06-29
 
-### Changed
-- **Robust Link & Package Extraction**: Enhanced parser logic to extract raw base64 identity package tokens and space invite links from deep links (`stellchat://`, `stellchat://`), web links, or fully formatted chat messages. Also normalized missing base64Url padding to prevent decoding failures.
-
-### Fixed
-- **Contact Dialog Auto-Exit Flow**: Renamed bottom sheet builder contexts to prevent context shadowing, ensuring that the manual public ID dialog properly pops (auto-exits) and registers success snackbars on completion.
-- **Gallery Scanner Resource Disposal**: Configured appropriate try-catch-finally wrapping and lifecycle disposal on the mobile scanner controller to prevent memory leaks and scan failures.
+### Added
+- Integrated **Stellar Wallet-First Authentication** with challenge signature verified via backend nonces.
+- Created **Soroban Smart Contract Verifier** for zero-knowledge proofs verify-and-settle.
+- Built **SnarkJS Poseidon-based Plonk Prover Service** running in Node.js microservice.
+- Developed **Brand Motion System** for 60fps native animated payment workflows, wallets, loading states.
+- Configured **MinIO S3 Compatible Object Storage** for secure presigned media uploads/downloads.
+- Added **Distributed Tracing** with Correlation IDs tracking payment events across backend, Redis and blockchain layers.
+- Centralized Material 3 Design Tokens, outline iconography (30 SVGs), flat illustrations (15 SVGs).
+- Configured automated docker local blockchain laboratory dev environment with Horizon & RPC.
