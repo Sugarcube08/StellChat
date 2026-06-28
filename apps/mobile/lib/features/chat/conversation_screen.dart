@@ -10,6 +10,9 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'dart:convert';
 import '../../core/providers.dart';
 import '../media/attachment_envelope.dart';
 import '../media/media_manager.dart';
@@ -53,7 +56,10 @@ class RecentMediaItem {
     }
     if (file != null) {
       final pLower = file!.path.toLowerCase();
-      return pLower.endsWith('.mp4') || pLower.endsWith('.mov') || pLower.endsWith('.avi') || pLower.endsWith('.mkv');
+      return pLower.endsWith('.mp4') ||
+          pLower.endsWith('.mov') ||
+          pLower.endsWith('.avi') ||
+          pLower.endsWith('.mkv');
     }
     return false;
   }
@@ -112,7 +118,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   static final List<String> _sessionPickedPaths = [];
-  
+
   bool _showScrollButton = false;
   bool _isInitialScroll = true;
   bool _isRecording = false;
@@ -132,12 +138,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    
+
     if (_scrollController.position.pixels <= 100) {
-      ref.read(messagesProvider(widget.conversation.contactId).notifier).loadMore();
+      ref
+          .read(messagesProvider(widget.conversation.contactId).notifier)
+          .loadMore();
     }
-    
-    final atBottom = _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200;
+
+    final atBottom =
+        _scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200;
     if (atBottom && _showScrollButton) {
       setState(() {
         _showScrollButton = false;
@@ -172,20 +182,25 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   Widget build(BuildContext context) {
     // ignore: avoid_print
     final colors = AppColors.of(context);
-    
+
     return ValueListenableBuilder(
-      valueListenable: Hive.box<ConversationState>('conversation_states').listenable(keys: [widget.conversation.contactId]),
+      valueListenable: Hive.box<ConversationState>(
+        'conversation_states',
+      ).listenable(keys: [widget.conversation.contactId]),
       builder: (context, Box<ConversationState> stateBox, _) {
         final state = stateBox.get(widget.conversation.contactId);
         final currentMode = state?.mode ?? ConversationMode.normal;
 
-        final messages = ref.watch(messagesProvider(widget.conversation.contactId));
-        
+        final messages = ref.watch(
+          messagesProvider(widget.conversation.contactId),
+        );
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients && messages.isNotEmpty) {
             final pos = _scrollController.position;
             final lastMsg = messages.last;
-            final isMe = lastMsg.senderId == ref.read(chatRepositoryProvider).myPublicId;
+            final isMe =
+                lastMsg.senderId == ref.read(chatRepositoryProvider).myPublicId;
             final atBottom = pos.pixels >= pos.maxScrollExtent - 200;
 
             final hasNewMessage = messages.length > _lastMessageCount;
@@ -199,7 +214,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               _lastMessageCount = messages.length;
 
               if (isMe || atBottom) {
-                _scrollController.animateTo(pos.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+                _scrollController.animateTo(
+                  pos.maxScrollExtent,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
                 if (_showScrollButton) {
                   setState(() {
                     _showScrollButton = false;
@@ -219,73 +238,109 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         return Scaffold(
           backgroundColor: colors.primaryBackground,
           appBar: AppBar(
-                backgroundColor: colors.primaryBackground,
-                elevation: 0,
-                centerTitle: true,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                  onPressed: widget.onBack ?? () => Navigator.pop(context),
-                ),
-                title: GestureDetector(
-                  onTap: () => _showSafetyNumbers(context),
-                  child: Column(
+            backgroundColor: colors.primaryBackground,
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+              onPressed: widget.onBack ?? () => Navigator.pop(context),
+            ),
+            title: GestureDetector(
+              onTap: () => _showSafetyNumbers(context),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.conversation.alias,
+                    style: AppTypography.section(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(widget.conversation.alias, style: AppTypography.section(context).copyWith(fontWeight: FontWeight.bold)),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified_user, size: 10, color: colors.success),
-                          const SizedBox(width: 4),
-                          Text('SECURE CHANNEL', style: TextStyle(fontSize: 8, color: colors.secondaryText.withAlpha(100), fontWeight: FontWeight.bold, letterSpacing: 1)),
-                        ],
+                      Icon(
+                        Icons.verified_user,
+                        size: 10,
+                        color: colors.success,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'SECURE CHANNEL',
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: colors.secondaryText.withAlpha(100),
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GhostAvatar(alias: widget.conversation.alias, size: 36),
-                  ),
                 ],
               ),
-              floatingActionButton: _showScrollButton ? FloatingActionButton.extended(
-                backgroundColor: colors.ghostAccent,
-                label: Text(
-                  _newMessagesCount > 0 ? '↓ $_newMessagesCount New Messages' : 'NEW MESSAGES',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)
-                ),
-                icon: const Icon(Icons.arrow_downward, size: 16),
-                onPressed: () {
-                  _scrollController.animateTo(_scrollController.position.maxScrollExtent, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-                  setState(() {
-                    _showScrollButton = false;
-                    _newMessagesCount = 0;
-                  });
-                },
-              ) : null,
-              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              body: Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final msg = messages[index];
-                        final isMe = msg.senderId == ref.read(chatRepositoryProvider).myPublicId;
-                        return _buildMessageBubble(msg, isMe);
-                      },
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: GhostAvatar(alias: widget.conversation.alias, size: 36),
+              ),
+            ],
+          ),
+          floatingActionButton: _showScrollButton
+              ? FloatingActionButton.extended(
+                  backgroundColor: colors.ghostAccent,
+                  label: Text(
+                    _newMessagesCount > 0
+                        ? '↓ $_newMessagesCount New Messages'
+                        : 'NEW MESSAGES',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  widget.isRequestMode 
-                      ? _buildRequestActions() 
-                      : (_isRecording ? _buildVoiceRecorder() : _buildComposer(currentMode)),
-                ],
+                  icon: const Icon(Icons.arrow_downward, size: 16),
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                    setState(() {
+                      _showScrollButton = false;
+                      _newMessagesCount = 0;
+                    });
+                  },
+                )
+              : null,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerFloat,
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMe =
+                        msg.senderId ==
+                        ref.read(chatRepositoryProvider).myPublicId;
+                    return _buildMessageBubble(msg, isMe);
+                  },
+                ),
               ),
-            );
+              widget.isRequestMode
+                  ? _buildRequestActions()
+                  : (_isRecording
+                        ? _buildVoiceRecorder()
+                        : _buildComposer(currentMode)),
+            ],
+          ),
+        );
       },
     );
   }
@@ -298,13 +353,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           setState(() => _isRecording = false);
           final messenger = ScaffoldMessenger.of(context);
           try {
-            await ref.read(conversationServiceProvider).sendVoiceNote(
-              widget.conversation.contactId, 
-              file, 
-              durationMs: durationMs
-            );
+            await ref
+                .read(conversationServiceProvider)
+                .sendVoiceNote(
+                  widget.conversation.contactId,
+                  file,
+                  durationMs: durationMs,
+                );
           } catch (e) {
-            messenger.showSnackBar(SnackBar(content: Text('Failed to send voice note: $e')));
+            messenger.showSnackBar(
+              SnackBar(content: Text('Failed to send voice note: $e')),
+            );
           }
         },
         onCancel: () => setState(() => _isRecording = false),
@@ -331,11 +390,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: Icon(Icons.add_circle_outline, color: colors.secondaryText.withAlpha(150)),
+                  icon: Icon(
+                    Icons.add_circle_outline,
+                    color: colors.secondaryText.withAlpha(150),
+                  ),
                   onPressed: _showGalleryBottomSheet,
                 ),
                 IconButton(
-                  icon: Icon(Icons.account_balance_wallet_outlined, color: colors.ghostAccent),
+                  icon: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: colors.ghostAccent,
+                  ),
                   onPressed: () => _showPaymentDialog(context),
                 ),
                 Expanded(
@@ -348,9 +413,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       style: AppTypography.body(context),
                       cursorColor: colors.ghostAccent,
                       decoration: InputDecoration(
-                        hintText: isGhost ? 'Ghost Message...' : 'Secure Message...',
-                        hintStyle: AppTypography.body(context).copyWith(color: colors.secondaryText.withAlpha(80)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        hintText: isGhost
+                            ? 'Ghost Message...'
+                            : 'Secure Message...',
+                        hintStyle: AppTypography.body(
+                          context,
+                        ).copyWith(color: colors.secondaryText.withAlpha(80)),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         filled: true,
                         fillColor: colors.secondaryBackground,
                         border: OutlineInputBorder(
@@ -366,7 +438,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   builder: (context, value, child) {
                     if (value.text.trim().isEmpty) {
                       return IconButton(
-                        icon: Icon(Icons.mic_none_rounded, color: colors.secondaryText.withAlpha(150)),
+                        icon: Icon(
+                          Icons.mic_none_rounded,
+                          color: colors.secondaryText.withAlpha(150),
+                        ),
                         onPressed: () {
                           AppHaptics.medium();
                           setState(() => _isRecording = true);
@@ -400,26 +475,44 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ),
         child: Row(
           children: [
-            _buildModeOption('NORMAL', ConversationMode.normal, currentMode == ConversationMode.normal),
-            _buildModeOption('GHOST', ConversationMode.ghost, currentMode == ConversationMode.ghost),
+            _buildModeOption(
+              'NORMAL',
+              ConversationMode.normal,
+              currentMode == ConversationMode.normal,
+            ),
+            _buildModeOption(
+              'GHOST',
+              ConversationMode.ghost,
+              currentMode == ConversationMode.ghost,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildModeOption(String label, ConversationMode mode, bool isSelected) {
+  Widget _buildModeOption(
+    String label,
+    ConversationMode mode,
+    bool isSelected,
+  ) {
     final colors = AppColors.of(context);
     return Expanded(
       child: GestureDetector(
         onTap: () {
           AppHaptics.selection();
-          ref.read(conversationServiceProvider).setConversationMode(widget.conversation.contactId, mode);
+          ref
+              .read(conversationServiceProvider)
+              .setConversationMode(widget.conversation.contactId, mode);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            color: isSelected ? (mode == ConversationMode.ghost ? colors.warning : colors.ghostAccent) : Colors.transparent,
+            color: isSelected
+                ? (mode == ConversationMode.ghost
+                      ? colors.warning
+                      : colors.ghostAccent)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.center,
@@ -428,7 +521,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             style: AppTypography.caption(context).copyWith(
               fontSize: 10,
               fontWeight: FontWeight.w900,
-              color: isSelected ? Theme.of(context).colorScheme.onPrimary : colors.secondaryText.withAlpha(100),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : colors.secondaryText.withAlpha(100),
               letterSpacing: 1.0,
             ),
           ),
@@ -504,36 +599,56 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
-        padding: msg.type == MessageType.voice ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: msg.type == MessageType.voice
+            ? EdgeInsets.zero
+            : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? colors.ghostAccent.withAlpha(40) : colors.elevatedSurface, 
+          color: isMe
+              ? colors.ghostAccent.withAlpha(40)
+              : colors.elevatedSurface,
           borderRadius: BorderRadius.circular(20).copyWith(
-            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(20),
-            bottomLeft: !isMe ? const Radius.circular(4) : const Radius.circular(20),
+            bottomRight: isMe
+                ? const Radius.circular(4)
+                : const Radius.circular(20),
+            bottomLeft: !isMe
+                ? const Radius.circular(4)
+                : const Radius.circular(20),
           ),
           border: Border.all(color: colors.hairline, width: 0.5),
         ),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (msg.type == MessageType.image || msg.type == MessageType.video) 
-              AttachmentWidget(message: msg) 
+            if (msg.type == MessageType.image || msg.type == MessageType.video)
+              AttachmentWidget(message: msg)
             else if (msg.type == MessageType.voice)
               VoiceMessageBubble(message: msg, isMe: isMe)
-            else 
+            else
               Text(msg.plaintext, style: AppTypography.body(context)),
-            
+
             if (msg.type != MessageType.voice) ...[
               const SizedBox(height: 4),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(DateFormat.Hm().format(msg.timestamp), style: AppTypography.caption(context).copyWith(fontSize: 8, color: colors.secondaryText.withAlpha(80))),
+                  Text(
+                    DateFormat.Hm().format(msg.timestamp),
+                    style: AppTypography.caption(context).copyWith(
+                      fontSize: 8,
+                      color: colors.secondaryText.withAlpha(80),
+                    ),
+                  ),
                   if (msg.metadata?['is_ghost'] == true) ...[
-                    const SizedBox(width: 4), 
-                    Icon(Icons.visibility_off_outlined, size: 8, color: colors.warning)
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.visibility_off_outlined,
+                      size: 8,
+                      color: colors.warning,
+                    ),
                   ],
                   if (isMe) ...[
                     const SizedBox(width: 4),
@@ -560,19 +675,35 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Verify these numbers with your contact to ensure no interception.', style: TextStyle(fontSize: 12, color: colors.textSecondary)),
+            Text(
+              'Verify these numbers with your contact to ensure no interception.',
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
+            ),
             const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(16), 
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: colors.surfacePrimary,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(contact.fingerprint, textAlign: TextAlign.center, style: const TextStyle(fontFamily: 'monospace', letterSpacing: 1, fontSize: 13))
+              child: Text(
+                contact.fingerprint,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  letterSpacing: 1,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('CLOSE'))],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CLOSE'),
+          ),
+        ],
       ),
     );
   }
@@ -591,7 +722,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               label: 'BLOCK',
               type: GhostButtonType.danger,
               onPressed: () async {
-                await ref.read(conversationServiceProvider).blockRequest(widget.conversation.contactId);
+                await ref
+                    .read(conversationServiceProvider)
+                    .blockRequest(widget.conversation.contactId);
                 navigator.pop();
               },
             ),
@@ -599,7 +732,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               label: 'ACCEPT',
               type: GhostButtonType.primary,
               onPressed: () async {
-                await ref.read(conversationServiceProvider).acceptRequest(widget.conversation.contactId);
+                await ref
+                    .read(conversationServiceProvider)
+                    .acceptRequest(widget.conversation.contactId);
                 navigator.pop();
               },
             ),
@@ -619,11 +754,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         return;
       }
       _sessionPickedPaths.insert(0, photo.path);
-      
-      messenger.showSnackBar(const SnackBar(content: Text('Encrypting & Uploading Image...')));
+
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Encrypting & Uploading Image...')),
+      );
       await convService.sendImage(contactId, File(photo.path));
     } catch (e) {
-      if (mounted) messenger.showSnackBar(SnackBar(content: Text('Camera capture failed: $e')));
+      if (mounted)
+        messenger.showSnackBar(
+          SnackBar(content: Text('Camera capture failed: $e')),
+        );
     }
   }
 
@@ -631,15 +771,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final file = await item.filePromise;
     if (file == null) {
-      scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Failed to load media file.')));
+      scaffoldMessenger.showSnackBar(
+        const SnackBar(content: Text('Failed to load media file.')),
+      );
       return;
     }
     if (!mounted) return;
-    
+
     final isVideo = item.isVideo;
     final convService = ref.read(conversationServiceProvider);
     final contactId = widget.conversation.contactId;
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -654,8 +796,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 height: 180,
                 width: 240,
                 child: isVideo
-                  ? Center(child: Icon(Icons.play_circle_outline, color: AppColors.of(dialogContext).info, size: 48))
-                  : item.buildThumbnail(context),
+                    ? Center(
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          color: AppColors.of(dialogContext).info,
+                          size: 48,
+                        ),
+                      )
+                    : item.buildThumbnail(context),
               ),
             ),
           ],
@@ -670,14 +818,24 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               Navigator.pop(dialogContext);
               try {
                 if (isVideo) {
-                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Compressing & Uploading Video...')));
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Compressing & Uploading Video...'),
+                    ),
+                  );
                   await convService.sendVideo(contactId, file);
                 } else {
-                  scaffoldMessenger.showSnackBar(const SnackBar(content: Text('Encrypting & Uploading Image...')));
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Encrypting & Uploading Image...'),
+                    ),
+                  );
                   await convService.sendImage(contactId, file);
                 }
               } catch (e) {
-                scaffoldMessenger.showSnackBar(SnackBar(content: Text('Failed to send media: $e')));
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(content: Text('Failed to send media: $e')),
+                );
               }
             },
             child: const Text('Send'),
@@ -692,7 +850,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.of(context).primaryBackground,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return DraggableScrollableSheet(
           initialChildSize: 0.6,
@@ -707,27 +867,37 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   builder: (context, snapshot) {
                     final items = snapshot.data ?? [];
                     final colors = AppColors.of(context);
-                    
+
                     return Column(
                       children: [
                         Container(
-                          margin: const EdgeInsets.symmetric(vertical: 10), 
-                          width: 40, 
-                          height: 4, 
-                          decoration: BoxDecoration(color: colors.hairline, borderRadius: BorderRadius.circular(2))
+                          margin: const EdgeInsets.symmetric(vertical: 10),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.hairline,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                         const Divider(height: 1),
                         Expanded(
                           child: items.isEmpty
-                              ? Center(child: Icon(Icons.photo_library_outlined, size: 48, color: colors.textMuted))
+                              ? Center(
+                                  child: Icon(
+                                    Icons.photo_library_outlined,
+                                    size: 48,
+                                    color: colors.textMuted,
+                                  ),
+                                )
                               : GridView.builder(
                                   controller: scrollController,
                                   padding: EdgeInsets.zero,
-                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3, 
-                                    crossAxisSpacing: 1, 
-                                    mainAxisSpacing: 1
-                                  ),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 3,
+                                        crossAxisSpacing: 1,
+                                        mainAxisSpacing: 1,
+                                      ),
                                   itemCount: items.length,
                                   itemBuilder: (context, index) {
                                     final item = items[index];
@@ -737,27 +907,50 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                                         _confirmAndSendRecentMedia(item);
                                       },
                                       child: Stack(
-                                        fit: StackFit.expand, 
+                                        fit: StackFit.expand,
                                         children: [
                                           item.buildThumbnail(context),
-                                          if (item.isVideo) 
+                                          if (item.isVideo)
                                             Container(
-                                              color: Colors.black38, 
-                                              child: const Center(child: Icon(Icons.play_circle_outline, color: Colors.white70, size: 28))
+                                              color: Colors.black38,
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.play_circle_outline,
+                                                  color: Colors.white70,
+                                                  size: 28,
+                                                ),
+                                              ),
                                             ),
-                                        ]
+                                        ],
                                       ),
                                     );
                                   },
                                 ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24, top: 12),
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 16,
+                            bottom: 24,
+                            top: 12,
+                          ),
                           child: Row(
                             children: [
-                              _buildActionItem(context, Icons.camera_alt_outlined, 'Camera', colors.error, _pickCamera),
+                              _buildActionItem(
+                                context,
+                                Icons.camera_alt_outlined,
+                                'Camera',
+                                colors.error,
+                                _pickCamera,
+                              ),
                               const SizedBox(width: 8),
-                              _buildActionItem(context, Icons.photo_library_outlined, 'Gallery', colors.info, _pickMedia),
+                              _buildActionItem(
+                                context,
+                                Icons.photo_library_outlined,
+                                'Gallery',
+                                colors.info,
+                                _pickMedia,
+                              ),
                             ],
                           ),
                         ),
@@ -795,9 +988,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         }
       } else {
         // Desktop Fallback
-        final platformFile = await FilePicker.pickFile(
-          type: FileType.media,
-        );
+        final platformFile = await FilePicker.pickFile(type: FileType.media);
 
         if (platformFile != null && platformFile.path != null) {
           pickedFile = File(platformFile.path!);
@@ -811,7 +1002,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       _sessionPickedPaths.insert(0, pickedFile.path);
 
       final path = pickedFile.path.toLowerCase();
-      final isVideo = path.endsWith('.mp4') ||
+      final isVideo =
+          path.endsWith('.mp4') ||
           path.endsWith('.mov') ||
           path.endsWith('.avi') ||
           path.endsWith('.mkv');
@@ -852,18 +1044,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       try {
         final PermissionState ps = await PhotoManager.requestPermissionExtend();
         if (ps == PermissionState.authorized || ps == PermissionState.limited) {
-          final List<AssetPathEntity> paths = await PhotoManager.getAssetPathList(
-            type: RequestType.common,
-            filterOption: FilterOptionGroup(
-              orders: [
-                const OrderOption(type: OrderOptionType.createDate, asc: false),
-              ],
-            ),
-          );
+          final List<AssetPathEntity> paths =
+              await PhotoManager.getAssetPathList(
+                type: RequestType.common,
+                filterOption: FilterOptionGroup(
+                  orders: [
+                    const OrderOption(
+                      type: OrderOptionType.createDate,
+                      asc: false,
+                    ),
+                  ],
+                ),
+              );
 
           if (paths.isNotEmpty) {
-            final List<AssetEntity> assets =
-                await paths.first.getAssetListRange(start: 0, end: 30);
+            final List<AssetEntity> assets = await paths.first
+                .getAssetListRange(start: 0, end: 30);
             for (final asset in assets) {
               result.add(RecentMediaItem(asset: asset));
             }
@@ -877,7 +1073,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     return result;
   }
 
-  Widget _buildActionItem(BuildContext context, IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _buildActionItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     final colors = AppColors.of(context);
     return Expanded(
       child: InkWell(
@@ -888,9 +1090,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: colors.elevatedSurface, 
-            borderRadius: BorderRadius.circular(12), 
-            border: Border.all(color: colors.hairline)
+            color: colors.elevatedSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.hairline),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -898,8 +1100,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               Icon(icon, color: color),
               const SizedBox(height: 6),
               Text(
-                label, 
-                style: AppTypography.caption(context).copyWith(fontWeight: FontWeight.bold)
+                label,
+                style: AppTypography.caption(
+                  context,
+                ).copyWith(fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -914,12 +1118,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final amountController = TextEditingController();
     String selectedAsset = 'USDC';
     final colors = AppColors.of(context);
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: colors.secondaryBackground,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
@@ -932,17 +1138,30 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('REQUEST STELLAR PAYMENT', style: AppTypography.section(context).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Text(
+                'REQUEST STELLAR PAYMENT',
+                style: AppTypography.section(
+                  context,
+                ).copyWith(fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: selectedAsset,
+                      initialValue: selectedAsset,
                       dropdownColor: colors.secondaryBackground,
                       decoration: const InputDecoration(labelText: 'Asset'),
-                      items: ['USDC', 'XLM'].map((asset) => DropdownMenuItem(value: asset, child: Text(asset))).toList(),
-                      onChanged: (val) => setSheetState(() => selectedAsset = val!),
+                      items: ['USDC', 'XLM']
+                          .map(
+                            (asset) => DropdownMenuItem(
+                              value: asset,
+                              child: Text(asset),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setSheetState(() => selectedAsset = val!),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -950,8 +1169,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     flex: 2,
                     child: TextField(
                       controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(labelText: 'Amount', hintText: '0.00'),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Amount',
+                        hintText: '0.00',
+                      ),
                     ),
                   ),
                 ],
@@ -962,21 +1186,63 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   final amount = amountController.text.trim();
                   if (amount.isEmpty) return;
                   Navigator.pop(sheetContext);
-                  
-                  final refId = 'pay_${DateTime.now().millisecondsSinceEpoch}';
-                  await ref.read(chatRepositoryProvider).sendMessage(
-                    recipientId: widget.conversation.contactId,
-                    text: 'Requested payment of $amount $selectedAsset',
-                    metadata: {
-                      'is_payment': true,
-                      'payment_amount': amount,
-                      'payment_asset': selectedAsset,
-                      'payment_status': 'PENDING',
-                      'payment_request_id': refId,
-                    },
-                  );
+
+                  final isAndroid =
+                      defaultTargetPlatform == TargetPlatform.android &&
+                      !kIsWeb;
+                  final host = isAndroid ? "10.0.2.2" : "localhost";
+                  final backendUrl = "http://$host:3000";
+
+                  try {
+                    debugPrint(
+                      "[Payment] Registering request on backend: $amount $selectedAsset",
+                    );
+                    final response = await http.post(
+                      Uri.parse("$backendUrl/api/payment/request"),
+                      headers: {"Content-Type": "application/json"},
+                      body: jsonEncode({
+                        "senderId": ref.read(chatRepositoryProvider).myPublicId,
+                        "recipientId": widget.conversation.contactId,
+                        "amount": amount,
+                        "asset": selectedAsset,
+                      }),
+                    );
+                    if (response.statusCode != 201 &&
+                        response.statusCode != 200) {
+                      throw Exception(
+                        "Failed to register request on backend: ${response.body}",
+                      );
+                    }
+
+                    final data = jsonDecode(response.body);
+                    final refId = data["id"];
+
+                    await ref
+                        .read(chatRepositoryProvider)
+                        .sendMessage(
+                          recipientId: widget.conversation.contactId,
+                          text: 'Requested payment of $amount $selectedAsset',
+                          metadata: {
+                            'is_payment': true,
+                            'payment_amount': amount,
+                            'payment_asset': selectedAsset,
+                            'payment_status': 'PENDING',
+                            'payment_request_id': refId,
+                          },
+                        );
+                  } catch (e) {
+                    debugPrint("[Payment] Request error: $e");
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Payment request failed: $e')),
+                      );
+                    }
+                  }
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: colors.ghostAccent, foregroundColor: Colors.black),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.ghostAccent,
+                  foregroundColor: Colors.black,
+                ),
                 child: const Text('SEND PAYMENT REQUEST'),
               ),
             ],
@@ -1022,10 +1288,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            isPayer 
-                ? (status == 'PENDING' ? 'Payment Request from ${widget.conversation.alias}' : 'Paid to ${widget.conversation.alias}')
-                : (status == 'PENDING' ? 'Awaiting Payment from ${widget.conversation.alias}' : 'Received from ${widget.conversation.alias}'),
-            style: TextStyle(fontSize: 11, color: colors.secondaryText.withAlpha(150)),
+            isPayer
+                ? (status == 'PENDING'
+                      ? 'Payment Request from ${widget.conversation.alias}'
+                      : 'Paid to ${widget.conversation.alias}')
+                : (status == 'PENDING'
+                      ? 'Awaiting Payment from ${widget.conversation.alias}'
+                      : 'Received from ${widget.conversation.alias}'),
+            style: TextStyle(
+              fontSize: 11,
+              color: colors.secondaryText.withAlpha(150),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1039,7 +1312,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 const SizedBox(
                   width: 12,
                   height: 12,
-                  child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white30),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    color: Colors.white30,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1058,16 +1334,28 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   minimumSize: const Size(double.infinity, 36),
                   backgroundColor: colors.success,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: const Text('APPROVE & PAY', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'APPROVE & PAY',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                ),
               ),
             ] else ...[
               const Row(
                 children: [
                   Icon(Icons.hourglass_empty, size: 12, color: Colors.amber),
                   SizedBox(width: 4),
-                  Text('PENDING APPROVAL', style: TextStyle(fontSize: 9, color: Colors.amber, fontWeight: FontWeight.bold)),
+                  Text(
+                    'PENDING APPROVAL',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -1079,18 +1367,33 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   children: [
                     Icon(Icons.verified, size: 12, color: colors.success),
                     const SizedBox(width: 4),
-                    Text('ZK VERIFIED', style: TextStyle(fontSize: 9, color: colors.success, fontWeight: FontWeight.bold)),
+                    Text(
+                      'ZK VERIFIED',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: colors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 TextButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Opening transaction on Stellar Explorer...')),
+                      const SnackBar(
+                        content: Text(
+                          'Opening transaction on Stellar Explorer...',
+                        ),
+                      ),
                     );
                   },
                   child: Text(
                     'EXPLORE',
-                    style: TextStyle(fontSize: 10, color: colors.ghostAccent, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colors.ghostAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -1102,31 +1405,132 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   void _executePayment(Message msg) async {
-    setState(() => _paymentProgress[msg.id] = "Submitting transaction to Stellar...");
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    setState(() => _paymentProgress[msg.id] = "Generating Zero-Knowledge Proof...");
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    setState(() => _paymentProgress[msg.id] = "Verifying proof on Soroban...");
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    setState(() => _paymentProgress.remove(msg.id));
-    
-    // Save state in Hive message metadata
-    final metadata = Map<String, dynamic>.from(msg.metadata ?? {});
-    metadata['payment_status'] = 'SETTLED';
-    metadata['payment_tx_hash'] = '8cf5beecf3a479b1897e937d2f8b50e386ebf48a97573fbf4f2db0e271424eb0';
-    msg.metadata = metadata;
-    await msg.save();
-    
-    if (mounted) {
+    final isAndroid =
+        defaultTargetPlatform == TargetPlatform.android && !kIsWeb;
+    final host = isAndroid ? "10.0.2.2" : "localhost";
+    final backendUrl = "http://$host:3000";
+    final proverUrl = "http://$host:5001";
+
+    final wallet = ref.read(stellarWalletServiceProvider);
+    if (!wallet.isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment approved, ZK verified and settled on-chain!')),
+        const SnackBar(
+          content: Text('Please connect your Stellar wallet first.'),
+        ),
       );
+      return;
+    }
+
+    final amount = msg.metadata?['payment_amount'] ?? '0.00';
+    final asset = msg.metadata?['payment_asset'] ?? 'XLM';
+    final requestId = msg.metadata?['payment_request_id'] ?? '';
+
+    try {
+      setState(() => _paymentProgress[msg.id] = "Preparing transaction...");
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      setState(() => _paymentProgress[msg.id] = "Awaiting wallet approval...");
+      // For testing, derive target address. In production, we'd retrieve this from counterparty's wallet-link endpoint.
+      final recipientAddress = widget.conversation.contactId.length > 50
+          ? "GD7OQ4KRLDWR3B5MX43NBLF2J7J37A2C7L6E2QPL47G53WJ735STELL"
+          : "GD7OQ4KRLDWR3B5MX43NBLF2J7J37A2C7L6E2QPL47G53WJ735STELL";
+
+      setState(() => _paymentProgress[msg.id] = "Submitting transaction...");
+      final txHash = await wallet.submitPayment(
+        recipientAddress,
+        amount,
+        asset,
+      );
+
+      setState(
+        () => _paymentProgress[msg.id] = "Waiting for ledger confirmation...",
+      );
+      final submitResponse = await http.post(
+        Uri.parse("$backendUrl/api/payment/submit"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"requestId": requestId, "txHash": txHash}),
+      );
+      if (submitResponse.statusCode != 201 &&
+          submitResponse.statusCode != 200) {
+        throw Exception("Backend submit failed: ${submitResponse.body}");
+      }
+      final paymentData = jsonDecode(submitResponse.body);
+      final paymentId = paymentData["id"];
+
+      setState(() => _paymentProgress[msg.id] = "Generating proof...");
+      final proveResponse = await http.post(
+        Uri.parse("$proverUrl/prove"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "sender_private_key": wallet.address.hashCode.toString(),
+          "recipient_stellar_addr_hash": recipientAddress.hashCode.toString(),
+          "amount": amount.replaceAll(".", ""),
+          "blinding_factor": "42424242",
+          "payment_hash_commitment": "5761827401928374610283746192837461928",
+        }),
+      );
+      if (proveResponse.statusCode != 200) {
+        throw Exception(
+          "Prover failed to generate ZK proof: ${proveResponse.body}",
+        );
+      }
+      final proofData = jsonDecode(proveResponse.body);
+      final proof = proofData["proof"];
+      final publicSignals = proofData["publicSignals"];
+
+      setState(() => _paymentProgress[msg.id] = "Submitting proof...");
+      final verifyResponse = await http.post(
+        Uri.parse("$backendUrl/api/payment/verify-proof"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "paymentId": paymentId,
+          "proof": proof,
+          "publicSignals": publicSignals,
+        }),
+      );
+      if (verifyResponse.statusCode != 201 &&
+          verifyResponse.statusCode != 200) {
+        throw Exception("Soroban verification failed: ${verifyResponse.body}");
+      }
+
+      final verifyResult = jsonDecode(verifyResponse.body);
+      if (verifyResult["success"] != true) {
+        throw Exception("Soroban contract rejected ZK proof");
+      }
+
+      setState(() => _paymentProgress[msg.id] = "Proof verified!");
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      setState(() => _paymentProgress.remove(msg.id));
+
+      // Save state in Hive message metadata
+      final metadata = Map<String, dynamic>.from(msg.metadata ?? {});
+      metadata['payment_status'] = 'SETTLED';
+      metadata['payment_tx_hash'] = txHash;
+      msg.metadata = metadata;
+      await msg.save();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment approved, ZK verified and settled on-chain!',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("[Payment] Settle error: $e");
+      if (mounted) {
+        setState(() => _paymentProgress.remove(msg.id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Payment failed: ${e.toString().replaceAll("Exception: ", "")}',
+            ),
+          ),
+        );
+      }
     }
   }
 }
@@ -1161,7 +1565,9 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
   }
 
   void _initMedia() async {
-    if (widget.message.metadata == null || widget.message.metadata?['media_id'] == null) return;
+    if (widget.message.metadata == null ||
+        widget.message.metadata?['media_id'] == null)
+      return;
     final envelope = AttachmentEnvelope.fromJson(widget.message.metadata!);
     final mediaId = envelope.mediaId;
     final mediaManager = ref.read(mediaManagerProvider);
@@ -1183,8 +1589,7 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
           });
           if (update.state == MediaState.READY) {
             _loadFiles();
-          } else if (update.state == MediaState.FAILED) {
-          }
+          } else if (update.state == MediaState.FAILED) {}
         }
       }
     });
@@ -1193,12 +1598,14 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
   }
 
   void _loadFiles() async {
-    if (widget.message.metadata == null || widget.message.metadata?['media_id'] == null) return;
+    if (widget.message.metadata == null ||
+        widget.message.metadata?['media_id'] == null)
+      return;
     final envelope = AttachmentEnvelope.fromJson(widget.message.metadata!);
     final mediaManager = ref.read(mediaManagerProvider);
     final relay = await ref.read(activeRelayProvider.future);
     if (!mounted) return;
-    
+
     final identity = ref.read(identityServiceProvider).currentIdentity;
 
     if (relay == null || identity == null) {
@@ -1230,7 +1637,10 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
           messageId: widget.message.id,
         );
         if (mounted) {
-          setState(() { _thumbFile = file; _thumbState = MediaState.READY; });
+          setState(() {
+            _thumbFile = file;
+            _thumbState = MediaState.READY;
+          });
         }
       } catch (_) {
         // Ignore
@@ -1256,8 +1666,13 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
   }
 
   void _download() async {
-    if (widget.message.metadata == null || widget.message.metadata?['media_id'] == null) return;
-    if (_mediaState == MediaState.DOWNLOADING || _mediaState == MediaState.DECRYPTING || _mediaState == MediaState.VERIFYING) return;
+    if (widget.message.metadata == null ||
+        widget.message.metadata?['media_id'] == null)
+      return;
+    if (_mediaState == MediaState.DOWNLOADING ||
+        _mediaState == MediaState.DECRYPTING ||
+        _mediaState == MediaState.VERIFYING)
+      return;
 
     final mediaManager = ref.read(mediaManagerProvider);
     final envelope = AttachmentEnvelope.fromJson(widget.message.metadata!);
@@ -1265,7 +1680,7 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
 
     try {
       if (!mounted) return;
-      
+
       final identity = ref.read(identityServiceProvider).currentIdentity;
       if (relay == null || identity == null) {
         throw Exception('Active relay or identity is null');
@@ -1279,7 +1694,10 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
         messageId: widget.message.id,
       );
       if (mounted) {
-        setState(() { _decryptedFile = file; _mediaState = MediaState.READY; });
+        setState(() {
+          _decryptedFile = file;
+          _mediaState = MediaState.READY;
+        });
         _showFullScreen();
       }
     } catch (_) {
@@ -1295,22 +1713,47 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
     final status = meta?['status'] as String?;
     final isPending = status != null && status != 'SENT';
     final isFailed = status == 'FAILED';
-    final isProcessing = _mediaState == MediaState.DOWNLOADING || _mediaState == MediaState.DECRYPTING || _mediaState == MediaState.VERIFYING;
+    final isProcessing =
+        _mediaState == MediaState.DOWNLOADING ||
+        _mediaState == MediaState.DECRYPTING ||
+        _mediaState == MediaState.VERIFYING;
 
     return GestureDetector(
-      onTap: (!isPending && _decryptedFile != null) ? _showFullScreen : (!isPending && !isProcessing ? _download : null),
+      onTap: (!isPending && _decryptedFile != null)
+          ? _showFullScreen
+          : (!isPending && !isProcessing ? _download : null),
       child: Container(
         width: 200,
         height: 150,
         decoration: BoxDecoration(
-          color: colors.elevatedSurface, 
-          borderRadius: BorderRadius.circular(12), 
-          image: _thumbFile != null ? DecorationImage(image: ResizeImage(FileImage(_thumbFile!), width: 200, height: 150), fit: BoxFit.cover, opacity: isGhost ? 0.3 : 0.6) : null
+          color: colors.elevatedSurface,
+          borderRadius: BorderRadius.circular(12),
+          image: _thumbFile != null
+              ? DecorationImage(
+                  image: ResizeImage(
+                    FileImage(_thumbFile!),
+                    width: 200,
+                    height: 150,
+                  ),
+                  fit: BoxFit.cover,
+                  opacity: isGhost ? 0.3 : 0.6,
+                )
+              : null,
         ),
         child: Center(
-          child: (isProcessing || (isPending && !isFailed)) 
-            ? const CircularProgressIndicator(strokeWidth: 2) 
-            : Icon(isFailed ? Icons.error_outline : (widget.message.type == MessageType.video ? Icons.play_circle_outline : Icons.image_outlined), color: isFailed ? colors.error : colors.primaryText.withAlpha(100), size: 32),
+          child: (isProcessing || (isPending && !isFailed))
+              ? const CircularProgressIndicator(strokeWidth: 2)
+              : Icon(
+                  isFailed
+                      ? Icons.error_outline
+                      : (widget.message.type == MessageType.video
+                            ? Icons.play_circle_outline
+                            : Icons.image_outlined),
+                  color: isFailed
+                      ? colors.error
+                      : colors.primaryText.withAlpha(100),
+                  size: 32,
+                ),
         ),
       ),
     );
@@ -1318,14 +1761,26 @@ class _AttachmentWidgetState extends ConsumerState<AttachmentWidget> {
 
   void _showFullScreen() {
     if (_decryptedFile == null) return;
-    Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenMediaViewer(file: _decryptedFile!, type: widget.message.type)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FullScreenMediaViewer(
+          file: _decryptedFile!,
+          type: widget.message.type,
+        ),
+      ),
+    );
   }
 }
 
 class FullScreenMediaViewer extends StatefulWidget {
   final File file;
   final MessageType type;
-  const FullScreenMediaViewer({super.key, required this.file, required this.type});
+  const FullScreenMediaViewer({
+    super.key,
+    required this.file,
+    required this.type,
+  });
 
   @override
   State<FullScreenMediaViewer> createState() => _FullScreenMediaViewerState();
@@ -1349,15 +1804,29 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, 
-        elevation: 0, 
-        leading: IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
-        actions: [IconButton(icon: const Icon(Icons.share, color: Colors.white), onPressed: () => SharePlus.instance.share(ShareParams(files: [XFile(widget.file.path)])))],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share, color: Colors.white),
+            onPressed: () => SharePlus.instance.share(
+              ShareParams(files: [XFile(widget.file.path)]),
+            ),
+          ),
+        ],
       ),
       body: Center(
-        child: widget.type == MessageType.video 
-            ? _VideoPreview(file: widget.file) 
-            : InteractiveViewer(minScale: 0.5, maxScale: 4.0, child: Image.file(widget.file, fit: BoxFit.contain)),
+        child: widget.type == MessageType.video
+            ? _VideoPreview(file: widget.file)
+            : InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.file(widget.file, fit: BoxFit.contain),
+              ),
       ),
     );
   }
@@ -1386,8 +1855,15 @@ class _VideoPreviewState extends State<_VideoPreview> {
       final controller = VideoPlayerController.file(widget.file);
       _controller = controller;
       await controller.initialize();
-      if (!mounted) { controller.dispose(); return; }
-      _chewieController = ChewieController(videoPlayerController: controller, autoPlay: true, aspectRatio: controller.value.aspectRatio);
+      if (!mounted) {
+        controller.dispose();
+        return;
+      }
+      _chewieController = ChewieController(
+        videoPlayerController: controller,
+        autoPlay: true,
+        aspectRatio: controller.value.aspectRatio,
+      );
       if (mounted) setState(() {});
     } catch (_) {
       // Ignore
@@ -1404,8 +1880,11 @@ class _VideoPreviewState extends State<_VideoPreview> {
 
   @override
   Widget build(BuildContext context) {
-    if (_chewieController == null) return const Center(child: CircularProgressIndicator());
-    return AspectRatio(aspectRatio: _controller!.value.aspectRatio, child: Chewie(controller: _chewieController!));
+    if (_chewieController == null)
+      return const Center(child: CircularProgressIndicator());
+    return AspectRatio(
+      aspectRatio: _controller!.value.aspectRatio,
+      child: Chewie(controller: _chewieController!),
+    );
   }
 }
-

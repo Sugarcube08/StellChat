@@ -67,3 +67,5 @@ dist/
 appimagetool
 appimagetool*
 .antigravitycli
+target/
+test_snapshots/

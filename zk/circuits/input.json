@@ -1,7 +1,0 @@
-{
-  "sender_private_key": "12345678901234567890",
-  "recipient_stellar_addr_hash": "98765432109876543210",
-  "amount": "1000",
-  "blinding_factor": "4242424242424242",
-  "payment_hash_commitment": "5761827401928374610283746192837461928"
-}

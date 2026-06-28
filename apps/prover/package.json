@@ -1,0 +1,13 @@
+{
+  "name": "stellchat-prover",
+  "version": "1.0.0",
+  "description": "ZK Proof generation microservice for StellChat",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "snarkjs": "^0.7.4"
+  }
+}
