@@ -5,10 +5,15 @@ class AppAnimations {
   static const Duration medium = Duration(milliseconds: 250);
   static const Duration slow = Duration(milliseconds: 350);
 
-  // Premium Spring Curves
-  static const Curve springCurve = Curves.easeOutQuart;
-  static const Curve springCurveIn = Curves.easeInQuart;
-  static const Curve springCurveInOut = Curves.easeInOutQuart;
+  // Material 3 / Premium Curves
+  static const Curve standard = Curves.easeInOutCubic;
+  static const Curve accelerate = Curves.easeInCubic;
+  static const Curve decelerate = Curves.easeOutCubic;
+  static const Curve emphasized = Curves.easeInOutQuart;
+
+  static const Curve springCurve = emphasized;
+  static const Curve springCurveIn = accelerate;
+  static const Curve springCurveInOut = standard;
 
   static Widget fade({
     required Widget child,
@@ -72,8 +77,8 @@ class AppAnimations {
   }
 }
 
-class GhostPageTransitionsBuilder extends PageTransitionsBuilder {
-  const GhostPageTransitionsBuilder();
+class StellPageTransitionsBuilder extends PageTransitionsBuilder {
+  const StellPageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(
