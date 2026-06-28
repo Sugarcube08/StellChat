@@ -43,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-size: '18'
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
@@ -78,13 +78,13 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: wasm32-unknown-unknown
+          target: wasm32v1-none
           override: true
 
       - name: Compile Cargo WASM
         run: |
           cd contracts/stellar
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --target wasm32v1-none --release
 
   flutter-analyze:
     name: Flutter Analyze & Check
@@ -108,6 +108,11 @@ jobs:
         run: |
           cd apps/mobile
           flutter pub get
+
+      - name: Run build_runner code generation
+        run: |
+          cd apps/mobile
+          flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Run Flutter Analyze
         run: |

@@ -1,4 +1,10 @@
-import { Injectable, Logger, Inject, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  Inject,
+  BadRequestException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { UserEntity } from "./entities/user.entity";
@@ -9,7 +15,8 @@ import * as crypto from "crypto";
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly jwtSecret = process.env.JWT_SECRET || "stellchat-auth-jwt-secret-key-42";
+  private readonly jwtSecret =
+    process.env.JWT_SECRET || "stellchat-auth-jwt-secret-key-42";
 
   constructor(
     @InjectRepository(UserEntity)
@@ -23,12 +30,12 @@ export class AuthService {
     // Basic Stellar Address validation
     try {
       Keypair.fromPublicKey(address);
-    } catch (_) {
+    } catch {
       throw new BadRequestException("Invalid Stellar address format");
     }
 
     const nonce = `StellChat Authentication Challenge: ${crypto.randomBytes(16).toString("hex")}`;
-    
+
     // Store in Redis with a 5-minute TTL
     await this.redis.set(`auth:nonce:${address}`, nonce, "EX", 300);
     this.logger.log(`Generated challenge nonce for wallet: ${address}`);
@@ -49,7 +56,9 @@ export class AuthService {
     // 1. Retrieve stored nonce
     const storedNonce = await this.redis.get(`auth:nonce:${address}`);
     if (!storedNonce || storedNonce !== nonce) {
-      throw new UnauthorizedException("Challenge expired or invalid. Please request a new nonce.");
+      throw new UnauthorizedException(
+        "Challenge expired or invalid. Please request a new nonce.",
+      );
     }
 
     // 2. Verify signature using Stellar Keypair
@@ -57,13 +66,17 @@ export class AuthService {
       const kp = Keypair.fromPublicKey(address);
       const messageBuffer = Buffer.from(nonce);
       const signatureBuffer = Buffer.from(signature, "base64");
-      
+
       const isValid = kp.verify(messageBuffer, signatureBuffer);
       if (!isValid) {
-        throw new UnauthorizedException("Invalid cryptographic signature for this wallet");
+        throw new UnauthorizedException(
+          "Invalid cryptographic signature for this wallet",
+        );
       }
     } catch (err) {
-      this.logger.error(`Signature verification failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `Signature verification failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
       throw new UnauthorizedException("Signature verification failed");
     }
 
@@ -71,7 +84,9 @@ export class AuthService {
     await this.redis.del(`auth:nonce:${address}`);
 
     // 3. Retrieve or create user record
-    let user = await this.userRepo.findOne({ where: { walletAddress: address } });
+    let user = await this.userRepo.findOne({
+      where: { walletAddress: address },
+    });
     if (!user) {
       user = new UserEntity();
       user.walletAddress = address;
@@ -99,7 +114,9 @@ export class AuthService {
         throw new Error("Malformed token structure");
       }
 
-      const payloadString = Buffer.from(payloadBase64, "base64").toString("utf8");
+      const payloadString = Buffer.from(payloadBase64, "base64").toString(
+        "utf8",
+      );
       const expectedSignature = crypto
         .createHmac("sha256", this.jwtSecret)
         .update(payloadString)
@@ -109,13 +126,16 @@ export class AuthService {
         throw new Error("Invalid signature signature");
       }
 
-      const payload = JSON.parse(payloadString) as { address: string; exp: number };
+      const payload = JSON.parse(payloadString) as {
+        address: string;
+        exp: number;
+      };
       if (payload.exp < Date.now()) {
         throw new Error("Session expired");
       }
 
       return payload.address;
-    } catch (err) {
+    } catch {
       throw new UnauthorizedException("Invalid or expired session token");
     }
   }
@@ -130,7 +150,7 @@ export class AuthService {
       .createHmac("sha256", this.jwtSecret)
       .update(payload)
       .digest("hex");
-      
+
     return `${payloadBase64}.${signature}`;
   }
 }

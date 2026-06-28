@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, Column, PrimaryColumn, CreateDateColumn } from "typeorm";
 
 @Entity("wallet_links")
 export class WalletLinkEntity {

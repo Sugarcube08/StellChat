@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Get, Param, BadRequestException } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  BadRequestException,
+} from "@nestjs/common";
 import { PaymentService } from "./payment.service";
 
 @Controller("api/payment")
@@ -30,9 +37,16 @@ export class PaymentController {
     @Body("asset") asset?: string,
   ) {
     if (!senderId || !recipientId || !amount) {
-      throw new BadRequestException("senderId, recipientId, and amount are required");
+      throw new BadRequestException(
+        "senderId, recipientId, and amount are required",
+      );
     }
-    return await this.paymentService.createPaymentRequest(senderId, recipientId, amount, asset);
+    return await this.paymentService.createPaymentRequest(
+      senderId,
+      recipientId,
+      amount,
+      asset,
+    );
   }
 
   @Post("submit")
@@ -53,9 +67,15 @@ export class PaymentController {
     @Body("publicSignals") publicSignals: string[],
   ) {
     if (!paymentId || !proof || !publicSignals) {
-      throw new BadRequestException("paymentId, proof, and publicSignals are required");
+      throw new BadRequestException(
+        "paymentId, proof, and publicSignals are required",
+      );
     }
-    const success = await this.paymentService.verifyPaymentProof(paymentId, proof, publicSignals);
+    const success = await this.paymentService.verifyPaymentProof(
+      paymentId,
+      proof,
+      publicSignals,
+    );
     return { success };
   }
 }

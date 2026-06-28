@@ -19,7 +19,12 @@ import { DeliveryEntity } from "../src/inbox/entities/delivery.entity";
 import { MediaEntity } from "../src/media/entities/media.entity";
 import { MediaService } from "../src/media/media.service";
 import { UserEntity } from "../src/auth/entities/user.entity";
-import { PaymentEntity, PaymentRequestEntity, ProofRecordEntity, WalletLinkEntity } from "../src/payment/entities/payment.entity";
+import {
+  PaymentEntity,
+  PaymentRequestEntity,
+  ProofRecordEntity,
+  WalletLinkEntity,
+} from "../src/payment/entities/payment.entity";
 import { PaymentService } from "../src/payment/payment.service";
 
 describe("StellChat Integration (E2E & WS)", () => {
@@ -31,8 +36,10 @@ describe("StellChat Integration (E2E & WS)", () => {
   let paymentService: PaymentService;
 
   const jwtSecret = "stellchat-auth-jwt-secret-key-42";
-  const testWallet1 = "GBX5Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2";
-  const testWallet2 = "GBY3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3";
+  const testWallet1 =
+    "GBX5Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2Z2";
+  const testWallet2 =
+    "GBY3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3Y3";
 
   // Helper to generate valid JWT session token
   function generateTestToken(address: string): string {
@@ -157,7 +164,7 @@ describe("StellChat Integration (E2E & WS)", () => {
     if (!app) return done();
     const url = `http://localhost:${port}`;
     client1 = io(url, { forceNew: true });
-    
+
     client1.on("disconnect", () => {
       // Expect disconnect when no token
       done();
@@ -168,7 +175,7 @@ describe("StellChat Integration (E2E & WS)", () => {
     if (!app) return done();
     const url = `http://localhost:${port}`;
     const token = generateTestToken(testWallet1);
-    
+
     client1 = io(url, {
       forceNew: true,
       auth: { token },
@@ -214,13 +221,16 @@ describe("StellChat Integration (E2E & WS)", () => {
       testWallet1,
       testWallet2,
       "10.5",
-      "XLM"
+      "XLM",
     );
     expect(request.amount).toBe("10.5");
     expect(request.status).toBe("PENDING");
 
     // 2. Submit payment hash
-    const payment = await paymentService.submitPayment(request.id, "0xabcdef1234567890");
+    const payment = await paymentService.submitPayment(
+      request.id,
+      "0xabcdef1234567890",
+    );
     expect(payment.tx_hash).toBe("0xabcdef1234567890");
     expect(payment.status).toBe("PENDING");
   });

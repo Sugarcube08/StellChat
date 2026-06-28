@@ -18,7 +18,6 @@ import { AuthService } from "../auth/auth.service";
 import { Inject, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Redis from "ioredis";
-import { randomBytes } from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { io, Socket as ClientSocket } from "socket.io-client";
 
@@ -27,7 +26,9 @@ import { io, Socket as ClientSocket } from "socket.io-client";
     origin: "*",
   },
 })
-export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
+export class RelayGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
+{
   private readonly logger = new Logger(RelayGateway.name);
 
   @WebSocketServer()
@@ -61,17 +62,28 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
   }
 
   onModuleInit() {
-    this.inboxService.registerFcmDeliveryCallback(async (senderId, messageId, recipientId) => {
-      await this.emitStatusUpdate(senderId, messageId, "DELIVERED", recipientId);
-      this.logger.log(`STATUS_UPDATE_EMIT message_id=${messageId} sender_id=${senderId} status=DELIVERED`);
-    });
+    this.inboxService.registerFcmDeliveryCallback(
+      async (senderId, messageId, recipientId) => {
+        await this.emitStatusUpdate(
+          senderId,
+          messageId,
+          "DELIVERED",
+          recipientId,
+        );
+        this.logger.log(
+          `STATUS_UPDATE_EMIT message_id=${messageId} sender_id=${senderId} status=DELIVERED`,
+        );
+      },
+    );
   }
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
     const token = client.handshake.auth?.token || client.handshake.query?.token;
     if (!token) {
-      this.logger.warn(`Client ${client.id} connected without session token. Disconnecting.`);
+      this.logger.warn(
+        `Client ${client.id} connected without session token. Disconnecting.`,
+      );
       client.disconnect();
       return;
     }
@@ -93,11 +105,20 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
         );
       }
 
-      this.logger.log(`Client ${client.id} successfully authenticated as wallet: ${address}`);
-      await this.auditService.log("client_connected", { socket_id: client.id, wallet: address });
+      this.logger.log(
+        `Client ${client.id} successfully authenticated as wallet: ${address}`,
+      );
+      await this.auditService.log("client_connected", {
+        socket_id: client.id,
+        wallet: address,
+      });
     } catch (err) {
-      this.logger.error(`Handshake authentication failed for client ${client.id}: ${err instanceof Error ? err.message : String(err)}`);
-      client.emit("error", { message: "Invalid session token. Please reconnect wallet." });
+      this.logger.error(
+        `Handshake authentication failed for client ${client.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      client.emit("error", {
+        message: "Invalid session token. Please reconnect wallet.",
+      });
       client.disconnect();
     }
   }
@@ -234,7 +255,9 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     const deviceId = client.data.deviceId;
     if (!publicId) return { success: false, error: "Not authenticated" };
 
-    this.logger.log(`DELIVERY_RECEIPT_RECEIVED message_id=${payload.message_id} recipient_id=${publicId}`);
+    this.logger.log(
+      `DELIVERY_RECEIPT_RECEIVED message_id=${payload.message_id} recipient_id=${publicId}`,
+    );
 
     const result = await this.inboxService.acknowledgeMessage(
       publicId,
@@ -243,8 +266,15 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     );
 
     if (result && result.senderId) {
-      await this.emitStatusUpdate(result.senderId, payload.message_id, "DELIVERED", publicId);
-      this.logger.log(`MESSAGE_MARKED_DELIVERED message_id=${payload.message_id} sender_id=${result.senderId} recipient_id=${publicId}`);
+      await this.emitStatusUpdate(
+        result.senderId,
+        payload.message_id,
+        "DELIVERED",
+        publicId,
+      );
+      this.logger.log(
+        `MESSAGE_MARKED_DELIVERED message_id=${payload.message_id} sender_id=${result.senderId} recipient_id=${publicId}`,
+      );
     }
 
     this.logger.log(
@@ -270,7 +300,12 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     );
 
     if (result && result.senderId) {
-      await this.emitStatusUpdate(result.senderId, payload.message_id, "SEEN", publicId);
+      await this.emitStatusUpdate(
+        result.senderId,
+        payload.message_id,
+        "SEEN",
+        publicId,
+      );
     }
 
     this.logger.log(`Message ${payload.message_id} seen by ${publicId}`);
@@ -626,21 +661,39 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     });
   }
 
-  async acknowledgeAndEmitStatus(publicId: string, messageId: string, deviceId?: string) {
-    this.logger.log(`DELIVERY_RECEIPT_RECEIVED message_id=${messageId} recipient_id=${publicId}`);
+  async acknowledgeAndEmitStatus(
+    publicId: string,
+    messageId: string,
+    deviceId?: string,
+  ) {
+    this.logger.log(
+      `DELIVERY_RECEIPT_RECEIVED message_id=${messageId} recipient_id=${publicId}`,
+    );
     const result = await this.inboxService.acknowledgeMessage(
       publicId,
       messageId,
       deviceId,
     );
     if (result && result.senderId) {
-      await this.emitStatusUpdate(result.senderId, messageId, "DELIVERED", publicId);
-      this.logger.log(`MESSAGE_MARKED_DELIVERED message_id=${messageId} sender_id=${result.senderId} recipient_id=${publicId}`);
+      await this.emitStatusUpdate(
+        result.senderId,
+        messageId,
+        "DELIVERED",
+        publicId,
+      );
+      this.logger.log(
+        `MESSAGE_MARKED_DELIVERED message_id=${messageId} sender_id=${result.senderId} recipient_id=${publicId}`,
+      );
     }
     return result;
   }
 
-  private async emitStatusUpdate(senderId: string, messageId: string, status: "DELIVERED" | "SEEN", recipientId: string) {
+  private async emitStatusUpdate(
+    senderId: string,
+    messageId: string,
+    status: "DELIVERED" | "SEEN",
+    recipientId: string,
+  ) {
     const room = `inbox:${senderId}`;
     const payload = {
       message_id: messageId,
@@ -649,15 +702,23 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
       timestamp: Date.now(),
     };
 
-    this.logger.log(`STATUS_UPDATE_EMIT message_id=${messageId} sender_id=${senderId} status=${status}`);
-    this.logger.log(`STATUS_UPDATE_EMIT_START room=${room} message_id=${messageId}`);
-    
+    this.logger.log(
+      `STATUS_UPDATE_EMIT message_id=${messageId} sender_id=${senderId} status=${status}`,
+    );
+    this.logger.log(
+      `STATUS_UPDATE_EMIT_START room=${room} message_id=${messageId}`,
+    );
+
     const clients = this.server.sockets.adapter.rooms.get(room)?.size ?? 0;
     this.logger.log(`STATUS_UPDATE_ROOM_SIZE room=${room} clients=${clients}`);
-    this.logger.log(`STATUS_UPDATE_EMIT_PAYLOAD payload=${JSON.stringify(payload)}`);
+    this.logger.log(
+      `STATUS_UPDATE_EMIT_PAYLOAD payload=${JSON.stringify(payload)}`,
+    );
 
     this.server.to(room).emit("message.status_update", payload);
 
-    this.logger.log(`STATUS_UPDATE_EMIT_DONE room=${room} message_id=${messageId}`);
+    this.logger.log(
+      `STATUS_UPDATE_EMIT_DONE room=${room} message_id=${messageId}`,
+    );
   }
 }

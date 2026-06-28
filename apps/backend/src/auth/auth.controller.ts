@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Query, Body, HttpCode, HttpStatus } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  HttpCode,
+  HttpStatus,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
 @Controller("api/auth")

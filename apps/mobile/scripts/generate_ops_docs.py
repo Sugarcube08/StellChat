@@ -1,11 +1,13 @@
 import os
 
 def generate_ops_docs():
-    ops_path = "/home/sugarcube/Desktop/Documents/Code-Server/Hackathon Projects/Stellar-DH/StellChat/docs"
-    os.makedirs(ops_path, exist_ok=True)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
+    docs_path = os.path.join(repo_root, "docs")
+    os.makedirs(docs_path, exist_ok=True)
 
     # 1. local-development.md
-    with open(os.path.join(ops_path, "local-development.md"), "w") as f:
+    with open(os.path.join(docs_path, "local-development.md"), "w") as f:
         f.write('''# StellChat — Local Development Laboratory Guide
 
 StellChat is configured with a fully self-contained local blockchain laboratory. Developers do not need external dependencies or public testnet access to test end-to-end messaging, transaction building, or zero-knowledge proof verification.
@@ -47,7 +49,7 @@ chmod +x ./scripts/dev.sh
 ''')
 
     # 2. deployment.md
-    with open(os.path.join(ops_path, "deployment.md"), "w") as f:
+    with open(os.path.join(docs_path, "deployment.md"), "w") as f:
         f.write('''# StellChat — Operations & Production Deployment Guide
 
 Deploying StellChat to a production environment requires replacing local quickstart services with highly available networks and storage services.
@@ -88,13 +90,13 @@ When moving to Stellar Testnet or Mainnet:
 ''')
 
     # 3. architecture.md
-    with open(os.path.join(ops_path, "architecture.md"), "w") as f:
+    with open(os.path.join(docs_path, "architecture.md"), "w") as f:
         f.write('''# StellChat — System Architecture
 
 The following diagram outlines the messaging, payment, and zero-knowledge proof verification pipeline.
 
 ```mermaid
-sequence-diagram
+sequenceDiagram
     autonumber
     actor Alice as Alice (Sender)
     participant Prover as Prover Microservice

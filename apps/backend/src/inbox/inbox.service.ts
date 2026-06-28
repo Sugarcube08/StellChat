@@ -3,7 +3,6 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, MoreThan, IsNull, LessThan, In } from "typeorm";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { ConfigService } from "@nestjs/config";
-import * as crypto from "crypto";
 import Redis from "ioredis";
 import { v4 as uuidv4 } from "uuid";
 import { MessageEntity } from "./entities/message.entity";
@@ -11,7 +10,6 @@ import { DeliveryEntity } from "./entities/delivery.entity";
 import { DeviceEntity } from "./entities/device.entity";
 import { MediaService } from "../media/media.service";
 import { FirebaseService } from "./firebase.service";
-
 
 export interface MessageEnvelope {
   id: string;
@@ -32,9 +30,13 @@ export class InboxService implements OnModuleInit {
   private readonly INBOX_MAX_MESSAGES: number;
   private readonly PAIR_PENDING_MAX: number;
 
-  private fcmDeliveryCallback: ((senderId: string, messageId: string, recipientId: string) => void) | null = null;
+  private fcmDeliveryCallback:
+    | ((senderId: string, messageId: string, recipientId: string) => void)
+    | null = null;
 
-  registerFcmDeliveryCallback(cb: (senderId: string, messageId: string, recipientId: string) => void) {
+  registerFcmDeliveryCallback(
+    cb: (senderId: string, messageId: string, recipientId: string) => void,
+  ) {
     this.fcmDeliveryCallback = cb;
   }
 
@@ -153,7 +155,7 @@ export class InboxService implements OnModuleInit {
           `Idempotent queue: Delivery for message ${messageId} to device ${recipientDeviceId || "default"} already exists.`,
         );
       }
-      
+
       // Still cache in Redis (in case client disconnected and needs fast path)
       const inboxKey = recipientDeviceId
         ? `inbox:${publicId}:${recipientDeviceId}`
@@ -243,15 +245,23 @@ export class InboxService implements OnModuleInit {
     // Lookup recipient FCM Token and send FCM wake-up
     this.logger.log(`MESSAGE_RECEIVED recipient_identity=${publicId}`);
     this.logger.log(`FCM_RELAY_LOOKUP_START identity_id=${publicId}`);
-    const lookupStart = Date.now();
     try {
       const device = await this.deviceRepo.findOne({
         where: { identity_id: publicId },
       });
-      this.logger.log(`FCM_RELAY_LOOKUP_SUCCESS found_token=${!!device?.fcm_token}`);
-      this.logger.log(`DEVICE_LOOKUP found_token=${!!device?.fcm_token} identity_id=${publicId}`);
+      this.logger.log(
+        `FCM_RELAY_LOOKUP_SUCCESS found_token=${!!device?.fcm_token}`,
+      );
+      this.logger.log(
+        `DEVICE_LOOKUP found_token=${!!device?.fcm_token} identity_id=${publicId}`,
+      );
       if (device && device.fcm_token) {
-        await this.sendFcmWakeup(device.fcm_token, messageId, senderId, publicId);
+        await this.sendFcmWakeup(
+          device.fcm_token,
+          messageId,
+          senderId,
+          publicId,
+        );
       }
     } catch (fcmErr: any) {
       this.logger.error(
@@ -329,8 +339,16 @@ export class InboxService implements OnModuleInit {
       // 1. Find and update the specific delivery record for this device
       const delivery = await this.deliveryRepo.findOne({
         where: [
-          { message_id: messageId, recipient_id: publicId, recipient_device_id: deviceId || IsNull() },
-          { message_id: messageId, recipient_id: publicId, recipient_device_id: IsNull() },
+          {
+            message_id: messageId,
+            recipient_id: publicId,
+            recipient_device_id: deviceId || IsNull(),
+          },
+          {
+            message_id: messageId,
+            recipient_id: publicId,
+            recipient_device_id: IsNull(),
+          },
         ],
       });
 
@@ -338,7 +356,9 @@ export class InboxService implements OnModuleInit {
         senderId = delivery.sender_id;
         delivery.status = "ACKNOWLEDGED";
         await this.deliveryRepo.save(delivery);
-        this.logger.log(`Delivery for message ${messageId} to device ${deviceId || "default"} acknowledged.`);
+        this.logger.log(
+          `Delivery for message ${messageId} to device ${deviceId || "default"} acknowledged.`,
+        );
       }
 
       // 2. Check if all deliveries for this message have been acknowledged
@@ -356,7 +376,9 @@ export class InboxService implements OnModuleInit {
           if (message.retention_mode === "VIEW_ONCE") {
             if (message.media_id) {
               try {
-                await this.mediaService.decrementReferenceCount(message.media_id);
+                await this.mediaService.decrementReferenceCount(
+                  message.media_id,
+                );
               } catch (e: any) {
                 this.logger.error(
                   `Failed to decrement media refcount for VIEW_ONCE message: ${e?.message}`,
@@ -521,8 +543,15 @@ export class InboxService implements OnModuleInit {
     this.logger.log(`Device registered: ${identityId} (${platform})`);
   }
 
-  async sendFcmWakeup(fcmToken: string, messageId: string, senderId?: string, recipientId?: string): Promise<void> {
-    this.logger.log(`FCM_DISPATCH_START token=${fcmToken} message_id=${messageId}`);
+  async sendFcmWakeup(
+    fcmToken: string,
+    messageId: string,
+    senderId?: string,
+    recipientId?: string,
+  ): Promise<void> {
+    this.logger.log(
+      `FCM_DISPATCH_START token=${fcmToken} message_id=${messageId}`,
+    );
     this.logger.log(`FCM_SEND_START message_id=${messageId}`);
     try {
       const msgId = await this.firebaseService.sendWakeup(fcmToken, messageId);
@@ -535,7 +564,7 @@ export class InboxService implements OnModuleInit {
         if (recipientId) {
           await this.deliveryRepo.update(
             { message_id: messageId, recipient_id: recipientId },
-            { status: "DELIVERED" }
+            { status: "DELIVERED" },
           );
         }
 
@@ -554,7 +583,9 @@ export class InboxService implements OnModuleInit {
           this.fcmDeliveryCallback(senderId, messageId, recipientId);
         }
       } else {
-        this.logger.log(`FCM_DISPATCH_FAILURE error="FCM disabled or not initialized"`);
+        this.logger.log(
+          `FCM_DISPATCH_FAILURE error="FCM disabled or not initialized"`,
+        );
       }
     } catch (err: any) {
       this.logger.log(`FCM_DISPATCH_FAILURE error="${err.message}"`);

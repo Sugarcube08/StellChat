@@ -20,12 +20,14 @@ export class FederationService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const federationEnabled = this.configService.get<string>("FEDERATION_ENABLED") === "true";
+    const federationEnabled =
+      this.configService.get<string>("FEDERATION_ENABLED") === "true";
     let privKeyBase58 = this.configService.get<string>("RELAY_PRIVATE_KEY");
 
     if (!privKeyBase58) {
       if (federationEnabled) {
-        const errorMsg = "RELAY_PRIVATE_KEY is missing but FEDERATION_ENABLED is true. Federation mode refuses to start without a persistent configured key.";
+        const errorMsg =
+          "RELAY_PRIVATE_KEY is missing but FEDERATION_ENABLED is true. Federation mode refuses to start without a persistent configured key.";
         this.logger.error(errorMsg);
         throw new Error(errorMsg);
       }
@@ -35,9 +37,13 @@ export class FederationService implements OnModuleInit {
       if (fs.existsSync(keyFilePath)) {
         try {
           privKeyBase58 = fs.readFileSync(keyFilePath, "utf8").trim();
-          this.logger.log(`Loaded persisted relay private key from ${keyFilePath}`);
+          this.logger.log(
+            `Loaded persisted relay private key from ${keyFilePath}`,
+          );
         } catch (e: any) {
-          this.logger.error(`Failed to read persisted relay key file: ${e.message}`);
+          this.logger.error(
+            `Failed to read persisted relay key file: ${e.message}`,
+          );
         }
       }
 
@@ -47,9 +53,13 @@ export class FederationService implements OnModuleInit {
           const seed = crypto.randomBytes(32);
           privKeyBase58 = bs58.encode(Buffer.from(seed));
           fs.writeFileSync(keyFilePath, privKeyBase58, "utf8");
-          this.logger.log(`Generated and persisted new relay private key to ${keyFilePath}`);
+          this.logger.log(
+            `Generated and persisted new relay private key to ${keyFilePath}`,
+          );
         } catch (e: any) {
-          this.logger.error(`Failed to persist newly generated relay key: ${e.message}`);
+          this.logger.error(
+            `Failed to persist newly generated relay key: ${e.message}`,
+          );
           const ephemeralSeed = crypto.randomBytes(32);
           privKeyBase58 = bs58.encode(Buffer.from(ephemeralSeed));
         }
@@ -65,7 +75,7 @@ export class FederationService implements OnModuleInit {
     } catch (e: any) {
       const errorMsg = `Invalid RELAY_PRIVATE_KEY configuration: ${e.message}`;
       this.logger.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error(errorMsg, { cause: e });
     }
 
     this.relayPublicId = this.derivePublicId(this.relayKeyPair.publicKey);

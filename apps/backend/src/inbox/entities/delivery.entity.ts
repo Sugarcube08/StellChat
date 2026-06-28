@@ -1,4 +1,9 @@
-import { Entity, Column, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from "typeorm";
 
 @Entity("message_delivery")
 export class DeliveryEntity {

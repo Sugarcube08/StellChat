@@ -2,7 +2,8 @@ import os
 import shutil
 
 def generate_release_artifacts():
-    repo_root = "/home/sugarcube/Desktop/Documents/Code-Server/Hackathon Projects/Stellar-DH/StellChat"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
     
     # 1. Root Level Release Documents
     # CHANGELOG.md

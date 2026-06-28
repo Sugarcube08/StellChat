@@ -31,14 +31,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message =
-      exception instanceof Error
-        ? exception.message
-        : "Internal server error";
+      exception instanceof Error ? exception.message : "Internal server error";
 
-    const stack =
-      exception instanceof Error
-        ? exception.stack
-        : "";
+    const stack = exception instanceof Error ? exception.stack : "";
 
     this.logger.error(
       `GHOST_LOG: BACKEND_CRASH: status=${status} path=${request.url} method=${request.method} error="${message}"`,
@@ -51,7 +46,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: status === HttpStatus.INTERNAL_SERVER_ERROR ? "Internal server error" : message,
+      message:
+        status === HttpStatus.INTERNAL_SERVER_ERROR
+          ? "Internal server error"
+          : message,
     });
   }
 }

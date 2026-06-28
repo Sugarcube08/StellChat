@@ -96,16 +96,25 @@ export class MediaService implements OnModuleInit {
   async onModuleInit() {
     try {
       this.logger.log(`Ensuring S3 bucket '${this.bucketName}' exists...`);
-      await this.s3Client.send(new HeadBucketCommand({ Bucket: this.bucketName }));
+      await this.s3Client.send(
+        new HeadBucketCommand({ Bucket: this.bucketName }),
+      );
       this.logger.log(`S3 bucket '${this.bucketName}' already exists.`);
     } catch (err: any) {
-      this.logger.log(`S3 bucket '${this.bucketName}' check returned: ${err.name || err.message}`);
+      this.logger.log(
+        `S3 bucket '${this.bucketName}' check returned: ${err.name || err.message}`,
+      );
       this.logger.log(`Creating S3 bucket '${this.bucketName}'...`);
       try {
-        await this.s3Client.send(new CreateBucketCommand({ Bucket: this.bucketName }));
+        await this.s3Client.send(
+          new CreateBucketCommand({ Bucket: this.bucketName }),
+        );
         this.logger.log(`S3 bucket '${this.bucketName}' created successfully.`);
       } catch (createErr) {
-        this.logger.error(`Failed to create S3 bucket '${this.bucketName}':`, createErr);
+        this.logger.error(
+          `Failed to create S3 bucket '${this.bucketName}':`,
+          createErr,
+        );
       }
     }
   }

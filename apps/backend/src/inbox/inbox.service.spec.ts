@@ -134,9 +134,7 @@ describe("InboxService", () => {
 
   describe("acknowledgeMessage", () => {
     it("should update delivered_at for PERSISTENT messages", async () => {
-      mockDeliveryRepo.find.mockResolvedValue([
-        { status: "ACKNOWLEDGED" }
-      ]);
+      mockDeliveryRepo.find.mockResolvedValue([{ status: "ACKNOWLEDGED" }]);
       await service.acknowledgeMessage("test-id", "msg-id");
 
       expect(mockMessageRepo.findOne).toHaveBeenCalled();
@@ -149,9 +147,7 @@ describe("InboxService", () => {
         id: "msg-id",
         retention_mode: "VIEW_ONCE",
       });
-      mockDeliveryRepo.find.mockResolvedValue([
-        { status: "ACKNOWLEDGED" }
-      ]);
+      mockDeliveryRepo.find.mockResolvedValue([{ status: "ACKNOWLEDGED" }]);
       await service.acknowledgeMessage("test-id", "msg-id");
 
       expect(mockMessageRepo.delete).toHaveBeenCalledWith("msg-id");

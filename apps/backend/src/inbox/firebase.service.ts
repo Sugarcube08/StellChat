@@ -7,7 +7,8 @@ import { getMessaging, Message } from "firebase-admin/messaging";
 export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name);
   private firebaseApp: App | null = null;
-  private credentialSource: "service_account_json" | "env_vars" | "none" = "none";
+  private credentialSource: "service_account_json" | "env_vars" | "none" =
+    "none";
   private projectId = "unknown";
   private fcmEnabled = false;
 
@@ -15,10 +16,16 @@ export class FirebaseService implements OnModuleInit {
 
   async onModuleInit() {
     this.fcmEnabled = this.configService.get<string>("FCM_ENABLED") === "true";
-    const serviceAccountJson = this.configService.get<string>("FCM_SERVICE_ACCOUNT");
+    const serviceAccountJson = this.configService.get<string>(
+      "FCM_SERVICE_ACCOUNT",
+    );
     const envProjectId = this.configService.get<string>("FIREBASE_PROJECT_ID");
-    const envClientEmail = this.configService.get<string>("FIREBASE_CLIENT_EMAIL");
-    const envPrivateKey = this.configService.get<string>("FIREBASE_PRIVATE_KEY");
+    const envClientEmail = this.configService.get<string>(
+      "FIREBASE_CLIENT_EMAIL",
+    );
+    const envPrivateKey = this.configService.get<string>(
+      "FIREBASE_PRIVATE_KEY",
+    );
 
     this.logger.log("FCM_CONFIG_AUDIT_START");
     this.logger.log(`FCM_SERVICE_ACCOUNT_PRESENT=${!!serviceAccountJson}`);
@@ -34,7 +41,9 @@ export class FirebaseService implements OnModuleInit {
 
     if (this.fcmEnabled) {
       if (this.credentialSource === "none") {
-        this.logger.error("FCM_ADMIN_INITIALIZATION_FAILED error=\"Firebase Admin credentials missing.\"");
+        this.logger.error(
+          'FCM_ADMIN_INITIALIZATION_FAILED error="Firebase Admin credentials missing."',
+        );
         throw new Error("Firebase Admin credentials missing.");
       }
 
@@ -61,11 +70,16 @@ export class FirebaseService implements OnModuleInit {
           }
         } else {
           this.firebaseApp = getApp();
-          this.projectId = envProjectId || (this.firebaseApp.options as any)?.projectId || "unknown";
+          this.projectId =
+            envProjectId ||
+            (this.firebaseApp.options as any)?.projectId ||
+            "unknown";
         }
         this.logger.log("FCM_ADMIN_INITIALIZED");
       } catch (err: any) {
-        this.logger.error(`FCM_ADMIN_INITIALIZATION_FAILED error="${err.message}"`);
+        this.logger.error(
+          `FCM_ADMIN_INITIALIZATION_FAILED error="${err.message}"`,
+        );
         throw err;
       }
     } else {
@@ -89,9 +103,14 @@ export class FirebaseService implements OnModuleInit {
     return this.projectId;
   }
 
-  async sendWakeup(fcmToken: string, messageId: string): Promise<string | null> {
+  async sendWakeup(
+    fcmToken: string,
+    messageId: string,
+  ): Promise<string | null> {
     if (!this.fcmEnabled || !this.firebaseApp) {
-      this.logger.warn("FCM is disabled or Firebase Admin SDK not initialized.");
+      this.logger.warn(
+        "FCM is disabled or Firebase Admin SDK not initialized.",
+      );
       return null;
     }
 

@@ -3,7 +3,7 @@
 The following diagram outlines the messaging, payment, and zero-knowledge proof verification pipeline.
 
 ```mermaid
-sequence-diagram
+sequenceDiagram
     autonumber
     actor Alice as Alice (Sender)
     participant Prover as Prover Microservice

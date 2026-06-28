@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Inject, HttpException, HttpStatus } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Inject,
+  HttpException,
+  HttpStatus,
+} from "@nestjs/common";
 import { MetricsService } from "./metrics.service";
 import Redis from "ioredis";
 import { InjectDataSource } from "@nestjs/typeorm";
@@ -49,7 +57,10 @@ export class HealthController {
     }
 
     try {
-      if (this.firebaseService.getFcmEnabled() && !this.firebaseService.getApp()) {
+      if (
+        this.firebaseService.getFcmEnabled() &&
+        !this.firebaseService.getApp()
+      ) {
         throw new Error("FCM is enabled but Firebase app is not initialized");
       }
     } catch {
@@ -72,7 +83,8 @@ export class HealthController {
 
     try {
       const testPayload = { test: "health-check", timestamp: Date.now() };
-      const signature = this.federationService.signFederationRequest(testPayload);
+      const signature =
+        this.federationService.signFederationRequest(testPayload);
       const isValid = this.federationService.verifyFederationSignature(
         testPayload,
         signature,
@@ -171,7 +183,10 @@ export class HealthController {
       };
     } catch (err: any) {
       throw new HttpException(
-        { status: "error", message: `Storage health check failed: ${err.message}` },
+        {
+          status: "error",
+          message: `Storage health check failed: ${err.message}`,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -181,7 +196,8 @@ export class HealthController {
   async getRelayHealth() {
     try {
       const testPayload = { test: "health-check", timestamp: Date.now() };
-      const signature = this.federationService.signFederationRequest(testPayload);
+      const signature =
+        this.federationService.signFederationRequest(testPayload);
       const isValid = this.federationService.verifyFederationSignature(
         testPayload,
         signature,
@@ -194,12 +210,18 @@ export class HealthController {
         status: "ok",
         publicId: this.federationService.getRelayPublicId(),
         publicKey: this.federationService.getPublicKey(),
-        federationEnabled: this.federationService["configService"].get<string>("FEDERATION_ENABLED") === "true",
+        federationEnabled:
+          this.federationService["configService"].get<string>(
+            "FEDERATION_ENABLED",
+          ) === "true",
         persistent: true,
       };
     } catch (err: any) {
       throw new HttpException(
-        { status: "error", message: `Relay identity is unhealthy: ${err.message}` },
+        {
+          status: "error",
+          message: `Relay identity is unhealthy: ${err.message}`,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -218,7 +240,10 @@ export class HealthController {
       };
     } catch (err: any) {
       throw new HttpException(
-        { status: "error", message: `WebSocket gateway is unhealthy: ${err.message}` },
+        {
+          status: "error",
+          message: `WebSocket gateway is unhealthy: ${err.message}`,
+        },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -231,7 +256,8 @@ export class HealthController {
 
   @Post("delivery-receipt")
   async handleDeliveryReceipt(
-    @Body() payload: {
+    @Body()
+    payload: {
       public_id: string;
       device_id?: string;
       message_id: string;
@@ -242,7 +268,10 @@ export class HealthController {
     // 1. Verify that public_key matches public_id
     const derivedId = this.cryptoUtils.derivePublicId(payload.public_key);
     if (derivedId !== payload.public_id) {
-      throw new HttpException("Invalid Public ID for provided key", HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        "Invalid Public ID for provided key",
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     // 2. Verify signature on message_id
@@ -252,7 +281,10 @@ export class HealthController {
       payload.public_key,
     );
     if (!isValid) {
-      throw new HttpException("Cryptographic proof failed", HttpStatus.FORBIDDEN);
+      throw new HttpException(
+        "Cryptographic proof failed",
+        HttpStatus.FORBIDDEN,
+      );
     }
 
     // 3. Acknowledge and emit status
