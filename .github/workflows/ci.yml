@@ -1,0 +1,115 @@
+name: StellChat CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Lint, Build & Integration Test
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: stellchat_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-size: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd apps/backend && npm ci
+
+      - name: Lint and Format check
+        run: |
+          cd apps/backend
+          npm run lint --if-present
+          npx prettier --check "src/**/*.ts" "test/**/*.ts"
+
+      - name: Run E2E Integration Tests
+        run: |
+          cd apps/backend
+          npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stellchat_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-key-1234
+          STELLCHAT_ENV: test
+
+  contract-build:
+    name: Build Soroban Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Compile Cargo WASM
+        run: |
+          cd contracts/stellar
+          cargo build --target wasm32-unknown-unknown --release
+
+  flutter-analyze:
+    name: Flutter Analyze & Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Java (Android build prereq)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install Flutter packages
+        run: |
+          cd apps/mobile
+          flutter pub get
+
+      - name: Run Flutter Analyze
+        run: |
+          cd apps/mobile
+          flutter analyze
