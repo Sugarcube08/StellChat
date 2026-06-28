@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [android, ios, macos, windows, linux, web]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Install dependencies
+        run: |
+          cd client
+          flutter pub get
+
+      - name: Build
+        run: |
+          cd client
+          if [ "${{ matrix.target }}" == "android" ]; then
+            flutter build apk --release
+            flutter build appbundle --release
+          elif [ "${{ matrix.target }}" == "ios" ]; then
+            flutter build ipa --release --no-codesign
+          elif [ "${{ matrix.target }}" == "macos" ]; then
+            flutter build macos --release
+          elif [ "${{ matrix.target }}" == "linux" ]; then
+            # Note: Building Linux on macOS is not natively supported by Flutter.
+            # Usually, you need a Linux host to build the Linux binary.
+            echo "⚠️ Flutter cannot build Linux binaries on a macOS host natively."
+            echo "Skipping Linux build on macOS runner."
+          elif [ "${{ matrix.target }}" == "windows" ]; then
+            # Note: Building Windows on macOS is not natively supported by Flutter.
+            echo "⚠️ Flutter cannot build Windows binaries on a macOS host natively."
+            echo "Skipping Windows build on macOS runner."
+          elif [ "${{ matrix.target }}" == "web" ]; then
+            flutter build web --release
+          fi
+      
+      - name: Package Artifacts
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" == "web" ]; then
+            cd client/build/web && zip -r ../../../stellchat-web.zip .
+          elif [ "${{ matrix.target }}" == "macos" ]; then
+            cd client/build/macos/Build/Products/Release && zip -r ../../../../../../stellchat-macos.zip stellchat.app
+          elif [ "${{ matrix.target }}" == "ios" ]; then
+            cp client/build/ios/ipa/*.ipa stellchat-ios.ipa
+          elif [ "${{ matrix.target }}" == "android" ]; then
+            cp client/build/app/outputs/flutter-apk/app-release.apk stellchat-android.apk
+            cp client/build/app/outputs/bundle/release/app-release.aab stellchat-android.aab
+          fi
+
+      - name: Upload Artifact
+        if: success() && (matrix.target != 'linux' && matrix.target != 'windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}-artifact
+          path: stellchat-*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
