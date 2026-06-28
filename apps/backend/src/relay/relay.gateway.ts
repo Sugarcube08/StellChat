@@ -14,6 +14,7 @@ import { MetricsService } from "./metrics.service";
 import { CryptoUtils } from "../inbox/crypto-utils.service";
 import { FederationService } from "../federation/federation.service";
 import { GroupsService } from "../groups/groups.service";
+import { AuthService } from "../auth/auth.service";
 import { Inject, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Redis from "ioredis";
@@ -46,6 +47,7 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     private readonly configService: ConfigService,
     private readonly federationService: FederationService,
     private readonly groupsService: GroupsService,
+    private readonly authService: AuthService,
     @Inject("REDIS_SUBSCRIBER") private readonly redisSub: Redis,
     @Inject("REDIS_CLIENT") private readonly redis: Redis,
   ) {
@@ -67,92 +69,45 @@ export class RelayGateway implements OnGatewayConnection, OnGatewayDisconnect, O
 
   async handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
+    const token = client.handshake.auth?.token || client.handshake.query?.token;
+    if (!token) {
+      this.logger.warn(`Client ${client.id} connected without session token. Disconnecting.`);
+      client.disconnect();
+      return;
+    }
+    try {
+      const address = this.authService.verifySessionToken(token);
+      client.data.publicId = address;
+      client.data.deviceId = client.handshake.query?.deviceId || "default";
 
-    // Auto-send challenge for V2 identities
-    const nonce = randomBytes(32).toString("hex");
-    await this.inboxService.storeChallenge(client.id, nonce);
-    client.emit("identity.challenge", { nonce });
-    await this.auditService.log("client_connected", { socket_id: client.id });
+      await client.join(`inbox:${address}`);
+      await client.join(`inbox:${address}:${client.data.deviceId}`);
+
+      // Register home relay if RELAY_URL is configured
+      const myRelayUrl = this.configService.get<string>("RELAY_URL");
+      if (myRelayUrl) {
+        await this.federationService.registerHomeRelay(
+          address,
+          myRelayUrl,
+          client.data.deviceId,
+        );
+      }
+
+      this.logger.log(`Client ${client.id} successfully authenticated as wallet: ${address}`);
+      await this.auditService.log("client_connected", { socket_id: client.id, wallet: address });
+    } catch (err) {
+      this.logger.error(`Handshake authentication failed for client ${client.id}: ${err instanceof Error ? err.message : String(err)}`);
+      client.emit("error", { message: "Invalid session token. Please reconnect wallet." });
+      client.disconnect();
+    }
   }
 
   async handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
-    await this.inboxService.deleteChallenge(client.id);
     await this.auditService.log("client_disconnected", {
       socket_id: client.id,
       public_id: client.data.publicId,
     });
-  }
-
-  @SubscribeMessage("identity.prove")
-  async handleIdentityProve(
-    client: Socket,
-    payload: {
-      public_id: string;
-      public_key: string;
-      signature: string;
-      device_id?: string;
-    },
-  ) {
-    const nonce = await this.inboxService.getChallenge(client.id);
-    if (!nonce) {
-      client.emit("error", { message: "Challenge expired or not found" });
-      return;
-    }
-
-    const derivedId = this.cryptoUtils.derivePublicId(payload.public_key);
-    if (derivedId !== payload.public_id) {
-      client.emit("error", { message: "Invalid Public ID for provided key" });
-      return;
-    }
-
-    const isValid = this.cryptoUtils.verifySignature(
-      nonce,
-      payload.signature,
-      payload.public_key,
-    );
-    if (!isValid) {
-      client.emit("error", { message: "Cryptographic proof failed" });
-      return;
-    }
-
-    client.data.publicId = payload.public_id;
-    client.data.deviceId = payload.device_id;
-
-    // Join both primary and device-specific inbox
-    this.logger.log(`JOIN_ROOM_START room=inbox:${payload.public_id} socket=${client.id}`);
-    await client.join(`inbox:${payload.public_id}`);
-    this.logger.log(`JOIN_ROOM_SUCCESS room=inbox:${payload.public_id} socket=${client.id}`);
-    
-    if (payload.device_id) {
-      this.logger.log(`JOIN_ROOM_START room=inbox:${payload.public_id}:${payload.device_id} socket=${client.id}`);
-      await client.join(`inbox:${payload.public_id}:${payload.device_id}`);
-      this.logger.log(`JOIN_ROOM_SUCCESS room=inbox:${payload.public_id}:${payload.device_id} socket=${client.id}`);
-    }
-
-    // Register home relay if RELAY_URL is configured
-    const myRelayUrl = this.configService.get<string>("RELAY_URL");
-    if (myRelayUrl) {
-      await this.federationService.registerHomeRelay(
-        payload.public_id,
-        myRelayUrl,
-        payload.device_id || "default",
-      );
-    }
-
-    this.logger.log(
-      `Client ${client.id} verified as ${payload.public_id} (${payload.device_id || "no-device-id"})`,
-    );
-    await this.auditService.log("identity_verified", {
-      public_id: payload.public_id,
-      device_id: payload.device_id,
-      socket_id: client.id,
-    });
-    client.emit("identity.verified", {
-      public_id: payload.public_id,
-      device_id: payload.device_id,
-    });
-    await this.inboxService.deleteChallenge(client.id);
   }
 
   @SubscribeMessage("group.create")

@@ -10,6 +10,7 @@ import { AuditModule } from "./audit/audit.module";
 import { FederationModule } from "./federation/federation.module";
 import { GroupsModule } from "./groups/groups.module";
 import { PaymentModule } from "./payment/payment.module";
+import { AuthModule } from "./auth/auth.module";
 import { AppController } from "./app.controller";
 
 import { ThrottlerModule } from "@nestjs/throttler";
@@ -54,6 +55,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
     FederationModule,
     GroupsModule,
     PaymentModule,
+    AuthModule,
   ],
   controllers: [AppController],
 })
