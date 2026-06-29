@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'colors.dart';
-import 'typography.dart';
 
 class BrandTheme {
   static ThemeData get darkTheme {

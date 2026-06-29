@@ -25,12 +25,12 @@ jobs:
           cache: true
       - name: Install dependencies
         run: |
-          cd client
+          cd apps/mobile
           flutter pub get
 
       - name: Build
         run: |
-          cd client
+          cd apps/mobile
           if [ "${{ matrix.target }}" == "android" ]; then
             flutter build apk --release
             flutter build appbundle --release
@@ -55,14 +55,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.target }}" == "web" ]; then
-            cd client/build/web && zip -r ../../../stellchat-web.zip .
+            cd apps/mobile/build/web && zip -r ../../../stellchat-web.zip .
           elif [ "${{ matrix.target }}" == "macos" ]; then
-            cd client/build/macos/Build/Products/Release && zip -r ../../../../../../stellchat-macos.zip stellchat.app
+            cd apps/mobile/build/macos/Build/Products/Release && zip -r ../../../../../../stellchat-macos.zip stellchat.app
           elif [ "${{ matrix.target }}" == "ios" ]; then
-            cp client/build/ios/ipa/*.ipa stellchat-ios.ipa
+            cp apps/mobile/build/ios/ipa/*.ipa stellchat-ios.ipa
           elif [ "${{ matrix.target }}" == "android" ]; then
-            cp client/build/app/outputs/flutter-apk/app-release.apk stellchat-android.apk
-            cp client/build/app/outputs/bundle/release/app-release.aab stellchat-android.aab
+            cp apps/mobile/build/app/outputs/flutter-apk/app-release.apk stellchat-android.apk
+            cp apps/mobile/build/app/outputs/bundle/release/app-release.aab stellchat-android.aab
           fi
 
       - name: Upload Artifact

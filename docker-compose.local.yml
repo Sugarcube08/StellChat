@@ -62,6 +62,7 @@ services:
       - PORT=5001
       - WASM_PATH=/app/zk/build/payment_hasher_js/payment_hasher.wasm
       - ZKEY_PATH=/app/zk/build/payment_hasher_final.zkey
+      - VKEY_PATH=/app/zk/build/verification_key.json
     volumes:
       - ./zk:/app/zk
     restart: unless-stopped

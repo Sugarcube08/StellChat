@@ -384,7 +384,6 @@ class PaymentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
     final shortAddress = address.length > 20
         ? '${address.substring(0, 10)}...${address.substring(address.length - 8)}'
         : address;

@@ -18,6 +18,7 @@ chmod +x ./scripts/setup_zk.sh
 echo "--> Compiling Soroban Smart Contract..."
 cd contracts/stellar
 cargo build --target wasm32v1-none --release
+stellar contract optimize --wasm target/wasm32v1-none/release/stellchat_payment_verifier.wasm
 cd "$REPO_DIR"
 
 # 3. Boot docker compose stack
@@ -34,7 +35,8 @@ echo "--> Waiting for local Stellar Quickstart ledger..."
 until curl -s http://localhost:8000/ > /dev/null; do
   sleep 2
 done
-echo "Stellar Horizon is online!"
+echo "Stellar Horizon is online! Sleeping 15 seconds to let ledger core initialize..."
+sleep 15
 
 echo "--> Waiting for MinIO object storage..."
 until curl -s http://localhost:9000/minio/health/live > /dev/null; do
@@ -57,10 +59,11 @@ ADMIN_ADDR=$($STELLAR_CLI keys address admin)
 
 echo "Funding local administrator address ($ADMIN_ADDR)..."
 curl -s "http://localhost:8000/friendbot?addr=$ADMIN_ADDR" > /dev/null
+sleep 10
 
 # Deploy contract directly from the host
 CONTRACT_ID=$($STELLAR_CLI contract deploy \
-  --wasm contracts/stellar/target/wasm32v1-none/release/stellchat_payment_verifier.wasm \
+  --wasm contracts/stellar/target/wasm32v1-none/release/stellchat_payment_verifier.optimized.wasm \
   --source admin \
   --network standalone)
 
@@ -69,6 +72,11 @@ echo "Contract ID: $CONTRACT_ID"
 
 # Save contract ID locally for the NestJS backend and mobile app to load
 echo "$CONTRACT_ID" > apps/backend/src/payment/contract_id.txt
+
+echo "--> Copying contract ID into backend container..."
+docker exec stellchat-backend-local mkdir -p /usr/src/app/dist/payment /usr/src/app/src/payment || true
+docker cp apps/backend/src/payment/contract_id.txt stellchat-backend-local:/usr/src/app/dist/payment/contract_id.txt || true
+docker cp apps/backend/src/payment/contract_id.txt stellchat-backend-local:/usr/src/app/src/payment/contract_id.txt || true
 
 # 6. Initialize contract
 echo "--> Initializing smart contract on-chain..."

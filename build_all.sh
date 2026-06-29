@@ -12,7 +12,7 @@ OS=$(uname -s)
 # Read version dynamically
 VERSION=$(grep '"version"' "$PROJECT_ROOT/VERSION.json" | head -n 1 | awk -F '"' '{print $4}')
 if [ -z "$VERSION" ]; then
-    VERSION=$(grep "^version:" "$PROJECT_ROOT/client/pubspec.yaml" | cut -d' ' -f2 | cut -d'+' -f1)
+    VERSION=$(grep "^version:" "$PROJECT_ROOT/apps/mobile/pubspec.yaml" | cut -d' ' -f2 | cut -d'+' -f1)
 fi
 DEB_VERSION="${VERSION//+/-}"
 if [ -z "$DEB_VERSION" ]; then
@@ -42,7 +42,7 @@ fi
 
 # 2. Get Flutter Dependencies
 echo "📥 Getting Flutter packages..."
-cd "$PROJECT_ROOT/client"
+cd "$PROJECT_ROOT/apps/mobile"
 flutter pub get
 
 # 3. Build Web

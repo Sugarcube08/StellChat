@@ -1,3 +1,21 @@
+# ==========================================
+# StellChat Monorepo .gitignore
+# ==========================================
+
+# Operating Systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+.Spotlight-V100
+.Trashes
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.iml
+
 # Flutter
 .dart_tool/
 .flutter-plugins
@@ -5,68 +23,104 @@
 .packages
 .pub/
 build/
-
-# Generated
-*.g.dart
-*.freezed.dart
-*.mocks.dart
-
-# Hive
-*.hive
-*.lock
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/App.framework
+android/.gradle/
+android/local.properties
+# Note: apps/mobile/pubspec.lock is intentionally tracked, do not ignore here
 
 # Android
-**/android/.gradle/
-**/android/app/debug/
-**/android/app/profile/
-**/android/app/release/
+*.apk
+*.aab
+*.ap_
+captures/
+outputs/
 
-# iOS
-**/ios/Pods/
-**/ios/.symlinks/
-**/ios/Flutter/Flutter.framework
-**/ios/Flutter/App.framework
+# iOS/macOS
+DerivedData/
+xcuserdata/
+*.xcuserstate
 
-# IDE
-.idea/
-.vscode/
+# Node.js / TypeScript
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.turbo/
+.next/
+dist/
+coverage/
 
-# macOS
-.DS_Store
+# NestJS
+.nestjs/
 
-# Temporary
-tmp/
-temp/
-temp_*/
-*.tmp
-temp_sodium/
+# Rust / Soroban
+target/
+# Cargo.lock is kept since this is a versioned contract library workspace target
+
+# Docker
+*.pid
+*.log
+docker-data/
+docker-volumes/
+# Do not ignore Dockerfiles or compose files
+
+# Databases
+*.sqlite
+*.db
+*.db-journal
+postgres-data/
+redis-data/
+minio-data/
+
+# Object Storage
+uploads/
+buckets/
+storage/
+media-cache/
+
+# ZK Artifacts
+witness.wtns
+*.zkey
+*.r1cs
+*.ptau
+*.proof
+*.public
+*.sym
+build/circuits/
+generated_proofs/
+proving_cache/
 
 # Secrets
 .env
 .env.*
+!.env.example
+secrets/
 *.pem
 *.key
 *.p12
-*.jks
-
-# Identity Backups
-*.stellchatid
-
-# Local Databases
-*.db
-*.sqlite
-*.sqlite3
+*.crt
 
 # Logs
+logs/
 *.log
 
-# Test Outputs
-coverage/
+# Testing
+playwright-report/
+test-results/
+junit.xml
 
-dist/
+# Miscellaneous
+tmp/
+temp/
+cache/
+.cache/
+artifacts/
+screenshots/debug/
+recordings/
 appimagetool
 appimagetool*
 .antigravitycli
-target/
 test_snapshots/
-node_modules/

@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 5001;
 // Path to compiled circuit WASM and zkey proving key
 const WASM_PATH = process.env.WASM_PATH || path.join(__dirname, "../../zk/build/payment_hasher_js/payment_hasher.wasm");
 const ZKEY_PATH = process.env.ZKEY_PATH || path.join(__dirname, "../../zk/build/payment_hasher_final.zkey");
+const VKEY_PATH = process.env.VKEY_PATH || path.join(__dirname, "../../zk/build/verification_key.json");
 
 let poseidon;
 async function getPoseidon() {
@@ -108,9 +109,9 @@ app.post("/verify", async (req, res) => {
   if (!proof || !publicSignals) {
     return res.status(400).json({ error: "Missing proof or publicSignals" });
   }
-  const vKeyPath = path.join(__dirname, "../../zk/build/verification_key.json");
+  const vKeyPath = VKEY_PATH;
   if (!fs.existsSync(vKeyPath)) {
-    return res.status(500).json({ error: "Verification key not found. Run setup_zk.sh first." });
+    return res.status(500).json({ error: `Verification key not found at ${vKeyPath}. Run setup_zk.sh first.` });
   }
   try {
     const vKey = JSON.parse(fs.readFileSync(vKeyPath, "utf8"));
